@@ -29,8 +29,6 @@ import           Data.Monoid
 import           Data.Word
 import           Xeno.Types
 
---import Debug.Trace
-
 data Process a =
   Process {
       openF    :: !(ByteString ->               a) -- ^ Open tag.
@@ -133,7 +131,7 @@ process
   :: Monad m
   => Process (m ())
   -> ByteString -> m ()
-process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str = findLT 0
+process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) !str = findLT 0
   where
     findLT index =
       case elemIndexFrom openTagChar str index of
