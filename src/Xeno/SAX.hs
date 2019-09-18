@@ -16,9 +16,10 @@ module Xeno.SAX
   ) where
 
 import           Control.Exception
-import           Control.Monad.State.Strict
 import           Control.Monad.ST
+import           Control.Monad.State.Strict
 import           Control.Spork
+import           Data.Bits
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
@@ -312,12 +313,36 @@ isNameChar1 c =
   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58
 {-# INLINE isNameChar1 #-}
 
+isNameCharOriginal :: Word8 -> Bool
+isNameCharOriginal c =
+  (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58 ||
+  c == 45 || c == 46 || (c >= 48 && c <= 57)
+{-# INLINE isNameCharOriginal #-}
+
+{-
+-- TODO Strange, but highMaskIsNameChar, lowMaskIsNameChar don't calculate fast... FIX IT
+highMaskIsNameChar, lowMaskIsNameChar :: Word64
+(highMaskIsNameChar, lowMaskIsNameChar) =
+    foldl (\(hi,low) char -> (hi `setBit` (char - 64), low `setBit` char)) -- NB: `setBit` can process overflowed values (where char < 64; -- TODO fix it
+          (0::Word64, 0::Word64)
+          (map fromIntegral (filter isNameCharOriginal [0..128]))
+{-# NOINLINE highMaskIsNameChar #-}
+{-# NOINLINE lowMaskIsNameChar #-}
+-}
+
 -- | Is the character a valid tag/attribute name constituent?
 -- isNameChar1 + '-', '.', '0'-'9'
 isNameChar :: Word8 -> Bool
-isNameChar c =
-  (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58 ||
-  c == 45 || c == 46 || (c >= 48 && c <= 57)
+isNameChar char = (lowMaskIsNameChar `testBit` char'low) || (highMaskIsNameChar `testBit` char'high)
+   -- TODO 1) change code to use W# instead of Word64
+   --      2) Document `ii - 64` -- there is underflow, but `testBit` can process this!
+  where
+    char'low  = fromIntegral char
+    char'high = fromIntegral (char - 64)
+    highMaskIsNameChar :: Word64
+    highMaskIsNameChar = 576460745995190270 -- TODO write as binary
+    lowMaskIsNameChar :: Word64
+    lowMaskIsNameChar = 576284830442979328
 {-# INLINE isNameChar #-}
 
 -- | Char for '\''.
