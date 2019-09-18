@@ -258,8 +258,8 @@ process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) !str = findLT
 -- | /O(1)/ 'ByteString' index (subscript) operator, starting from 0.
 s_index :: ByteString -> Int -> Word8
 s_index ps n
-    | n < 0            = throw (XenoStringIndexProblem n ps)
-    | n >= S.length ps = throw (XenoStringIndexProblem n ps)
+    -- | n < 0            = throw (XenoStringIndexProblem n ps)
+    -- | n >= S.length ps = throw (XenoStringIndexProblem n ps)
     | otherwise      = ps `SU.unsafeIndex` n
 {-# INLINE s_index #-}
 
