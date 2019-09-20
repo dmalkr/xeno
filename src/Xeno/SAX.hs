@@ -282,6 +282,7 @@ parseName str index =
   if not (isNameChar1 (s_index str index))
      then index
      else parseName' str (index + 1)
+{-# INLINE parseName #-}
 
 -- | Basically @findIndex (not . isNameChar)@, but doesn't allocate.
 parseName' :: ByteString -> Int -> Int
@@ -313,11 +314,11 @@ isNameChar1 c =
   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58
 {-# INLINE isNameChar1 #-}
 
-isNameCharOriginal :: Word8 -> Bool
-isNameCharOriginal c =
+isNameCharX :: Word8 -> Bool
+isNameCharX c =
   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58 ||
   c == 45 || c == 46 || (c >= 48 && c <= 57)
-{-# INLINE isNameCharOriginal #-}
+{-# INLINE isNameCharX #-}
 
 {-
 -- TODO Strange, but highMaskIsNameChar, lowMaskIsNameChar don't calculate fast... FIX IT
@@ -335,7 +336,7 @@ highMaskIsNameChar, lowMaskIsNameChar :: Word64
 isNameChar :: Word8 -> Bool
 isNameChar char = (lowMaskIsNameChar `testBit` char'low) || (highMaskIsNameChar `testBit` char'high)
    -- TODO 1) change code to use W# instead of Word64
-   --      2) Document `ii - 64` -- there is underflow, but `testBit` can process this!
+   --      2) Document `ii - 64` -- there is underflow, but `testBit` can process this! -- TODO: replace with: max(0, ii - 64) using bit twiddling
   where
     char'low  = fromIntegral char
     char'high = fromIntegral (char - 64)
