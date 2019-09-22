@@ -58,82 +58,82 @@ parse str =
             parentRef <- fmap asURef (newRef 0)
             process Process {
                 openF = \(PS _ name_start name_len) -> do
-                 let tag = 0x00
-                     tag_end = -1
-                 index <- readRef sizeRef
-                 v' <-
-                   do v <- readSTRef vecRef
-                      if index + 5 < UMV.length v
-                        then pure v
-                        else do
-                          v' <- UMV.unsafeGrow v (3 * UMV.length v)
-                          writeSTRef vecRef v'
-                          return v'
-                 tag_parent <- readRef parentRef
-                 do writeRef parentRef index
-                    writeRef sizeRef (index + 5)
-                 do UMV.write v' index tag
-                    UMV.write v' (index + 1) tag_parent
-                    UMV.write v' (index + 2) (name_start - offset0)
-                    UMV.write v' (index + 3) name_len
-                    UMV.write v' (index + 4) tag_end
+                     let tag = 0x00
+                         tag_end = -1
+                     index <- readRef sizeRef
+                     v' <-
+                       do v <- readSTRef vecRef
+                          if index + 5 < UMV.length v
+                            then pure v
+                            else do
+                              v' <- UMV.unsafeGrow v (3 * UMV.length v)
+                              writeSTRef vecRef v'
+                              return v'
+                     tag_parent <- readRef parentRef
+                     do writeRef parentRef index
+                        writeRef sizeRef (index + 5)
+                     do UMV.write v' index tag
+                        UMV.write v' (index + 1) tag_parent
+                        UMV.write v' (index + 2) (name_start - offset0)
+                        UMV.write v' (index + 3) name_len
+                        UMV.write v' (index + 4) tag_end
               , attrF = \(PS _ key_start key_len) (PS _ value_start value_len) -> do
-                 index <- readRef sizeRef
-                 v' <-
-                   do v <- readSTRef vecRef
-                      if index + 5 < UMV.length v
-                        then pure v
-                        else do
-                          v' <- UMV.unsafeGrow v (3 * UMV.length v)
-                          writeSTRef vecRef v'
-                          return v'
-                 let tag = 0x02
-                 do writeRef sizeRef (index + 5)
-                 do UMV.write v' index tag
-                    UMV.write v' (index + 1) (key_start - offset0)
-                    UMV.write v' (index + 2) key_len
-                    UMV.write v' (index + 3) (value_start - offset0)
-                    UMV.write v' (index + 4) value_len
+                     index <- readRef sizeRef
+                     v' <-
+                       do v <- readSTRef vecRef
+                          if index + 5 < UMV.length v
+                            then pure v
+                            else do
+                              v' <- UMV.unsafeGrow v (3 * UMV.length v)
+                              writeSTRef vecRef v'
+                              return v'
+                     let tag = 0x02
+                     do writeRef sizeRef (index + 5)
+                     do UMV.write v' index tag
+                        UMV.write v' (index + 1) (key_start - offset0)
+                        UMV.write v' (index + 2) key_len
+                        UMV.write v' (index + 3) (value_start - offset0)
+                        UMV.write v' (index + 4) value_len
               , endOpenF = \_ -> return ()
               , textF = \(PS _ text_start text_len) -> do
-                 let tag = 0x01
-                 index <- readRef sizeRef
-                 v' <-
-                   do v <- readSTRef vecRef
-                      if index + 3 < UMV.length v
-                        then pure v
-                        else do
-                          v' <- UMV.unsafeGrow v (3 * UMV.length v)
-                          writeSTRef vecRef v'
-                          return v'
-                 do writeRef sizeRef (index + 3)
-                 do UMV.write v' index tag
-                    UMV.write v' (index + 1) (text_start - offset0)
-                    UMV.write v' (index + 2) text_len
+                     let tag = 0x01
+                     index <- readRef sizeRef
+                     v' <-
+                       do v <- readSTRef vecRef
+                          if index + 3 < UMV.length v
+                            then pure v
+                            else do
+                              v' <- UMV.unsafeGrow v (3 * UMV.length v)
+                              writeSTRef vecRef v'
+                              return v'
+                     do writeRef sizeRef (index + 3)
+                     do UMV.write v' index tag
+                        UMV.write v' (index + 1) (text_start - offset0)
+                        UMV.write v' (index + 2) text_len
               , closeF = \_ -> do
-                 v <- readSTRef vecRef
-                 -- Set the tag_end slot of the parent.
-                 parent <- readRef parentRef
-                 index <- readRef sizeRef
-                 UMV.write v (parent + 4) index
-                 -- Pop the stack and return to the parent element.
-                 previousParent <- UMV.read v (parent + 1)
-                 writeRef parentRef previousParent
+                     v <- readSTRef vecRef
+                     -- Set the tag_end slot of the parent.
+                     parent <- readRef parentRef
+                     index <- readRef sizeRef
+                     UMV.write v (parent + 4) index
+                     -- Pop the stack and return to the parent element.
+                     previousParent <- UMV.read v (parent + 1)
+                     writeRef parentRef previousParent
               , cdataF = \(PS _ cdata_start cdata_len) -> do
-                 let tag = 0x03
-                 index <- readRef sizeRef
-                 v' <- do
-                   v <- readSTRef vecRef
-                   if index + 3 < UMV.length v
-                     then pure v
-                     else do
-                       v' <- UMV.unsafeGrow v (3 * UMV.length v)
-                       writeSTRef vecRef v'
-                       return v'
-                 writeRef sizeRef (index + 3)
-                 UMV.write v' index tag
-                 UMV.write v' (index + 1) (cdata_start - offset0)
-                 UMV.write v' (index + 2) cdata_len
+                     let tag = 0x03
+                     index <- readRef sizeRef
+                     v' <- do
+                       v <- readSTRef vecRef
+                       if index + 3 < UMV.length v
+                         then pure v
+                         else do
+                           v' <- UMV.unsafeGrow v (3 * UMV.length v)
+                           writeSTRef vecRef v'
+                           return v'
+                     writeRef sizeRef (index + 3)
+                     UMV.write v' index tag
+                     UMV.write v' (index + 1) (cdata_start - offset0)
+                     UMV.write v' (index + 2) cdata_len
               } str
             wet <- readSTRef vecRef
             arr <- UV.unsafeFreeze wet
