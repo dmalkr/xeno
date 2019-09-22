@@ -304,7 +304,12 @@ elemIndexFrom c str offset = fmap (+ offset) (S.elemIndex c (S.drop offset str))
 -- Character types
 
 isSpaceChar :: Word8 -> Bool
-isSpaceChar c = c == 32 || (c <= 10 && c >= 9) || c == 13
+-- isSpaceChar c = c == 32 || (c <= 10 && c >= 9) || c == 13
+isSpaceChar 9  = True
+isSpaceChar 10 = True
+isSpaceChar 13 = True
+isSpaceChar 32 = True
+isSpaceChar _  = False
 {-# INLINE isSpaceChar #-}
 
 -- | Is the character a valid first tag/attribute name constituent?

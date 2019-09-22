@@ -15,16 +15,13 @@ module Xeno.DOM
   , children
   ) where
 
-import           Control.DeepSeq
 import           Control.Monad.ST
 import           Control.Spork
 import           Data.ByteString          (ByteString)
-import qualified Data.ByteString as S
 import           Data.ByteString.Internal (ByteString(PS))
-import           Data.Data                (Data, Typeable)
+import qualified Data.ByteString as S
 import           Data.Mutable
 import           Data.STRef
-import           Data.Vector.Unboxed      ((!))
 import qualified Data.Vector.Unboxed as UV
 import qualified Data.Vector.Unboxed.Mutable as UMV
 import           Xeno.SAX
@@ -51,8 +48,9 @@ parse str =
           _        -> Nothing
     PS _ offset0 _ = str
     node =
+      let !initialSize = min 10000000 (S.length str) in
       runST
-        (do nil <- UMV.new 1000
+        (do nil <- UMV.unsafeNew initialSize
             vecRef <- newSTRef nil
             sizeRef <- fmap asURef (newRef 0)
             parentRef <- fmap asURef (newRef 0)
@@ -72,11 +70,11 @@ parse str =
                      tag_parent <- readRef parentRef
                      do writeRef parentRef index
                         writeRef sizeRef (index + 5)
-                     do UMV.write v' index tag
-                        UMV.write v' (index + 1) tag_parent
-                        UMV.write v' (index + 2) (name_start - offset0)
-                        UMV.write v' (index + 3) name_len
-                        UMV.write v' (index + 4) tag_end
+                     do UMV.unsafeWrite v' index tag
+                        UMV.unsafeWrite v' (index + 1) tag_parent
+                        UMV.unsafeWrite v' (index + 2) (name_start - offset0)
+                        UMV.unsafeWrite v' (index + 3) name_len
+                        UMV.unsafeWrite v' (index + 4) tag_end
               , attrF = \(PS _ key_start key_len) (PS _ value_start value_len) -> do
                      index <- readRef sizeRef
                      v' <-
@@ -89,11 +87,11 @@ parse str =
                               return v'
                      let tag = 0x02
                      do writeRef sizeRef (index + 5)
-                     do UMV.write v' index tag
-                        UMV.write v' (index + 1) (key_start - offset0)
-                        UMV.write v' (index + 2) key_len
-                        UMV.write v' (index + 3) (value_start - offset0)
-                        UMV.write v' (index + 4) value_len
+                     do UMV.unsafeWrite v' index tag
+                        UMV.unsafeWrite v' (index + 1) (key_start - offset0)
+                        UMV.unsafeWrite v' (index + 2) key_len
+                        UMV.unsafeWrite v' (index + 3) (value_start - offset0)
+                        UMV.unsafeWrite v' (index + 4) value_len
               , endOpenF = \_ -> return ()
               , textF = \(PS _ text_start text_len) -> do
                      let tag = 0x01
@@ -107,17 +105,17 @@ parse str =
                               writeSTRef vecRef v'
                               return v'
                      do writeRef sizeRef (index + 3)
-                     do UMV.write v' index tag
-                        UMV.write v' (index + 1) (text_start - offset0)
-                        UMV.write v' (index + 2) text_len
+                     do UMV.unsafeWrite v' index tag
+                        UMV.unsafeWrite v' (index + 1) (text_start - offset0)
+                        UMV.unsafeWrite v' (index + 2) text_len
               , closeF = \_ -> do
                      v <- readSTRef vecRef
                      -- Set the tag_end slot of the parent.
                      parent <- readRef parentRef
                      index <- readRef sizeRef
-                     UMV.write v (parent + 4) index
+                     UMV.unsafeWrite v (parent + 4) index
                      -- Pop the stack and return to the parent element.
-                     previousParent <- UMV.read v (parent + 1)
+                     previousParent <- UMV.unsafeRead v (parent + 1)
                      writeRef parentRef previousParent
               , cdataF = \(PS _ cdata_start cdata_len) -> do
                      let tag = 0x03
@@ -131,9 +129,9 @@ parse str =
                            writeSTRef vecRef v'
                            return v'
                      writeRef sizeRef (index + 3)
-                     UMV.write v' index tag
-                     UMV.write v' (index + 1) (cdata_start - offset0)
-                     UMV.write v' (index + 2) cdata_len
+                     UMV.unsafeWrite v' index tag
+                     UMV.unsafeWrite v' (index + 1) (cdata_start - offset0)
+                     UMV.unsafeWrite v' (index + 2) cdata_len
               } str
             wet <- readSTRef vecRef
             arr <- UV.unsafeFreeze wet
