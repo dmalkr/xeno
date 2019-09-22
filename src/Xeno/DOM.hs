@@ -66,7 +66,7 @@ parse str =
                       if index + 5 < UMV.length v
                         then pure v
                         else do
-                          v' <- UMV.grow v (UMV.length v)
+                          v' <- UMV.unsafeGrow v (3 * UMV.length v)
                           writeSTRef vecRef v'
                           return v'
                  tag_parent <- readRef parentRef
@@ -84,7 +84,7 @@ parse str =
                       if index + 5 < UMV.length v
                         then pure v
                         else do
-                          v' <- UMV.grow v (UMV.length v)
+                          v' <- UMV.unsafeGrow v (3 * UMV.length v)
                           writeSTRef vecRef v'
                           return v'
                  let tag = 0x02
@@ -103,7 +103,7 @@ parse str =
                       if index + 3 < UMV.length v
                         then pure v
                         else do
-                          v' <- UMV.grow v (UMV.length v)
+                          v' <- UMV.unsafeGrow v (3 * UMV.length v)
                           writeSTRef vecRef v'
                           return v'
                  do writeRef sizeRef (index + 3)
@@ -127,7 +127,7 @@ parse str =
                    if index + 3 < UMV.length v
                      then pure v
                      else do
-                       v' <- UMV.grow v (UMV.length v)
+                       v' <- UMV.unsafeGrow v (3 * UMV.length v)
                        writeSTRef vecRef v'
                        return v'
                  writeRef sizeRef (index + 3)
