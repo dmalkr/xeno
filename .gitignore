@@ -1,4 +1,5 @@
-.stack-work
+.stack-work*
+.ghc.environment*
 _pier
 *.hi
 *.o
