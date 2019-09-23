@@ -135,8 +135,7 @@ process
 process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str' = findLT 0
   where
     -- We add \NUL to omit length check in `s_index`
-    -- TODO It can be slow for very long strings, so it is need special treatment,
-    --      such as special class NullTerminatedByteString.
+    -- Also please see https://gitlab.com/migamake/xeno/issues/1
     str = str' `S.snoc` 0
     findLT index =
       case elemIndexFrom openTagChar str index of
@@ -262,6 +261,10 @@ process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str' = findLT
 -- | /O(1)/ 'ByteString' index (subscript) operator, starting from 0.
 s_index :: ByteString -> Int -> Word8
 s_index ps n
+    -- 1) `n` is always non-negative;
+    -- 2) parser will stop on last `\NUL` (added in `process`) so we don't need to check crossing string boundary.
+    --    Also please see https://gitlab.com/migamake/xeno/issues/1
+    --
     -- | n < 0            = throw (XenoStringIndexProblem n ps)
     -- | n >= S.length ps = throw (XenoStringIndexProblem n ps)
     | otherwise      = ps `SU.unsafeIndex` n
