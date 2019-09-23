@@ -1,8 +1,9 @@
+{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE BinaryLiterals      #-}
 {-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE NamedFieldPuns      #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | SAX parser and API for XML.
 
@@ -26,7 +27,6 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Unsafe as SU
 import           Data.Char(isSpace)
 import           Data.Functor.Identity
-import           Data.Monoid
 import           Data.Word
 import           Xeno.Types
 
@@ -132,8 +132,12 @@ process
   :: Monad m
   => Process (m ())
   -> ByteString -> m ()
-process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) !str = findLT 0
+process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str' = findLT 0
   where
+    -- We add \NUL to omit length check in `s_index`
+    -- TODO It can be slow for very long strings, so it is need special treatment,
+    --      such as special class NullTerminatedByteString.
+    str = str' `S.snoc` 0
     findLT index =
       case elemIndexFrom openTagChar str index of
         Nothing -> unless (S.null text) (textF text)
@@ -304,12 +308,12 @@ elemIndexFrom c str offset = fmap (+ offset) (S.elemIndex c (S.drop offset str))
 -- Character types
 
 isSpaceChar :: Word8 -> Bool
--- isSpaceChar c = c == 32 || (c <= 10 && c >= 9) || c == 13
-isSpaceChar 9  = True
-isSpaceChar 10 = True
-isSpaceChar 13 = True
-isSpaceChar 32 = True
-isSpaceChar _  = False
+isSpaceChar = testBit (0b100000000000000000010011000000000 :: Int) . fromIntegral
+--                       |                  |  ||  bits:
+--                       |                  |  |+-- 9
+--                       |                  |  +--- 10
+--                       |                  +------ 13
+--                       +------------------------- 32
 {-# INLINE isSpaceChar #-}
 
 -- | Is the character a valid first tag/attribute name constituent?
@@ -319,36 +323,44 @@ isNameChar1 c =
   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58
 {-# INLINE isNameChar1 #-}
 
-isNameCharX :: Word8 -> Bool
-isNameCharX c =
-  (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58 ||
-  c == 45 || c == 46 || (c >= 48 && c <= 57)
-{-# INLINE isNameCharX #-}
-
-{-
+-- isNameCharOriginal :: Word8 -> Bool
+-- isNameCharOriginal c =
+--   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58 ||
+--   c == 45 || c == 46 || (c >= 48 && c <= 57)
+-- {-# INLINE isNameCharOriginal #-}
+--
 -- TODO Strange, but highMaskIsNameChar, lowMaskIsNameChar don't calculate fast... FIX IT
-highMaskIsNameChar, lowMaskIsNameChar :: Word64
-(highMaskIsNameChar, lowMaskIsNameChar) =
-    foldl (\(hi,low) char -> (hi `setBit` (char - 64), low `setBit` char)) -- NB: `setBit` can process overflowed values (where char < 64; -- TODO fix it
-          (0::Word64, 0::Word64)
-          (map fromIntegral (filter isNameCharOriginal [0..128]))
-{-# NOINLINE highMaskIsNameChar #-}
-{-# NOINLINE lowMaskIsNameChar #-}
--}
+-- highMaskIsNameChar, lowMaskIsNameChar :: Word64
+-- (highMaskIsNameChar, lowMaskIsNameChar) =
+--     foldl (\(hi,low) char -> (hi `setBit` (char - 64), low `setBit` char)) -- NB: `setBit` can process overflowed values (where char < 64; -- TODO fix it
+--           (0::Word64, 0::Word64)
+--           (map fromIntegral (filter isNameCharOriginal [0..128]))
+-- {-# INLINE highMaskIsNameChar #-}
+-- {-# INLINE lowMaskIsNameChar #-}
 
 -- | Is the character a valid tag/attribute name constituent?
 -- isNameChar1 + '-', '.', '0'-'9'
 isNameChar :: Word8 -> Bool
 isNameChar char = (lowMaskIsNameChar `testBit` char'low) || (highMaskIsNameChar `testBit` char'high)
    -- TODO 1) change code to use W# instead of Word64
-   --      2) Document `ii - 64` -- there is underflow, but `testBit` can process this! -- TODO: replace with: max(0, ii - 64) using bit twiddling
+   --      2) Document `ii - 64` -- there is underflow, but `testBit` can process this!
   where
     char'low  = fromIntegral char
     char'high = fromIntegral (char - 64)
     highMaskIsNameChar :: Word64
-    highMaskIsNameChar = 576460745995190270 -- TODO write as binary
+    highMaskIsNameChar = 0b11111111111111111111111111010000111111111111111111111111110
+    --                     ------------+------------- |    ------------+-------------
+    --                                 |              |                |  bits:
+    --                                 |              |                +-- 65-90
+    --                                 |              +------------------- 95
+    --                                 +---------------------------------- 97-122
     lowMaskIsNameChar :: Word64
-    lowMaskIsNameChar = 576284830442979328
+    lowMaskIsNameChar =  0b11111111111011000000000000000000000000000000000000000000000
+    --                     -----+----- ||
+    --                          |      ||  bits:
+    --                          |      |+-- 45
+    --                          |      +--- 46
+    --                          +---------- 48-58
 {-# INLINE isNameChar #-}
 
 -- | Char for '\''.
