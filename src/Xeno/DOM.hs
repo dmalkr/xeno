@@ -48,7 +48,7 @@ parse str =
           _        -> Nothing
     PS _ offset0 _ = str
     node =
-      let !initialSize = min 10000000 (S.length str) in
+      let !initialSize = max 1000 (S.length str `div` 8) in
       runST
         (do nil <- UMV.unsafeNew initialSize
             vecRef <- newSTRef nil
@@ -64,7 +64,7 @@ parse str =
                           if index + 5 < UMV.length v
                             then pure v
                             else do
-                              v' <- UMV.unsafeGrow v (3 * UMV.length v)
+                              v' <- UMV.unsafeGrow v (predictGrowSize name_start name_len (index + 5) (UMV.length v))
                               writeSTRef vecRef v'
                               return v'
                      tag_parent <- readRef parentRef
@@ -82,7 +82,7 @@ parse str =
                           if index + 5 < UMV.length v
                             then pure v
                             else do
-                              v' <- UMV.unsafeGrow v (3 * UMV.length v)
+                              v' <- UMV.unsafeGrow v (predictGrowSize value_start value_len (index + 5) (UMV.length v))
                               writeSTRef vecRef v'
                               return v'
                      let tag = 0x02
@@ -101,7 +101,7 @@ parse str =
                           if index + 3 < UMV.length v
                             then pure v
                             else do
-                              v' <- UMV.unsafeGrow v (3 * UMV.length v)
+                              v' <- UMV.unsafeGrow v (predictGrowSize text_start text_len (index + 3) (UMV.length v))
                               writeSTRef vecRef v'
                               return v'
                      do writeRef sizeRef (index + 3)
@@ -125,7 +125,7 @@ parse str =
                        if index + 3 < UMV.length v
                          then pure v
                          else do
-                           v' <- UMV.unsafeGrow v (3 * UMV.length v)
+                           v' <- UMV.unsafeGrow v (predictGrowSize cdata_start cdata_len (index + 3) (UMV.length v))
                            writeSTRef vecRef v'
                            return v'
                      writeRef sizeRef (index + 3)
@@ -137,4 +137,19 @@ parse str =
             arr <- UV.unsafeFreeze wet
             size <- readRef sizeRef
             return (UV.unsafeSlice 0 size arr))
-
+            where
+                -- Growing a large vector is slow, so we need to do it less times.
+                -- We can predict final array size after processing some part (i.e. 1/4) of input XML.
+                --
+                -- predictGrowSize _bsStart _bsLen _index vecLen = round $ fromIntegral vecLen * (1.25 :: Double)
+                predictGrowSize bsStart bsLen index vecLen =
+                    let processedLen = bsStart + bsLen - offset0
+                        -- 1. Using integral operations, such as
+                        --    "predictedTotalSize = (index * S.length str) `div` processedLen"
+                        --    cause overflow, so we use float.
+                        -- 2. Slightly enlarge predicted size to compensite copy on vector grow
+                        --    if prediction is incorrect
+                        k = (1.25 :: Double) * fromIntegral (S.length str) / fromIntegral processedLen
+                        predictedTotalSize = round $ fromIntegral index * k
+                        growSize = predictedTotalSize - vecLen
+                    in growSize
