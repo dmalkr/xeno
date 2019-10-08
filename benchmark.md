@@ -24,7 +24,18 @@ TODO GHC 8.6.5 has problems with speed :(
 In this section we present results of original `xeno` benchmarks, runned in two modes: with threaded support and without
 threaded support.
 
-![image](/uploads/227aa39e028f9dd02cc8197636b20e61/image.png)
+.[image](/uploads/227aa39e028f9dd02cc8197636b20e61/image.png)
+
+SAX:
+
+| size  |xeno threaded | improved xeno threaded | xeno unthreaded | improved xeno unthreaded |
+| ----- | ------------ | ---------------------- | --------------- | ------------------------ |
+| 4KB   | 24.44 μs     | 16.39 μs               | 5.638 μs        | 2.866 μs                 |
+| 31KB  | 13.01 μs     | 121.1 μs               | 2.477 μs        | 1.947 μs                 |
+| 211KB | 965.9 μs     | 760.0 μs               | 274.0 μs        | 139.3 μs                 |
+
+DOM:
+
 
 ## Threaded environment
 
