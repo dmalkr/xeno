@@ -26,7 +26,7 @@ threaded support.
 
 .[image](/uploads/227aa39e028f9dd02cc8197636b20e61/image.png)
 
-SAX:
+SAX (`xeno-sax` benchmarks):
 
 | size  |xeno threaded | improved xeno threaded | xeno unthreaded | improved xeno unthreaded |
 | ----- | ------------ | ---------------------- | --------------- | ------------------------ |
@@ -34,8 +34,13 @@ SAX:
 | 31KB  | 13.01 μs     | 121.1 μs               | 2.477 μs        | 1.947 μs                 |
 | 211KB | 965.9 μs     | 760.0 μs               | 274.0 μs        | 139.3 μs                 |
 
-DOM:
+DOM (`xeno-dom` benchmarks):
 
+| size  |xeno threaded | improved xeno threaded | xeno unthreaded | improved xeno unthreaded |
+| ----- | ------------ | ---------------------- | --------------- | ------------------------ |
+| 4KB   | 29.46 μs     | 40.96 μs               | 9.023 μs        | 6.174 μs                 |
+| 31KB  | 29.04 μs     | 167.7 μs               | 4.020 μs        | 3.433 μs                 |
+| 211KB | 3.297 ms     | 3.147 ms               | 433.0 μs        | 280.1 μs                 |
 
 ## Threaded environment
 
