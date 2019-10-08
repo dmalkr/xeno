@@ -9,22 +9,8 @@ There are two issues with old `xeno` benchmarks:
 
 So here are several type of benchmarks.
 
-## Note about GHC version
+# Summary
 
-TODO GHC 8.6.5 has problems with speed :(
-
-## Hardware & GHC
-* CPU: AMD Ryzen 9 3900X 12-Core Processor with 4200MHz
-* Memory: 32 Gb (4 banks),  2400MHz
-* Motherboard: ASRock X570 Phantom Gaming X
-* GHC: 8.6.5
-
-# Benchmark with small files
-
-In this section we present results of original `xeno` benchmarks, runned in two modes: with threaded support and without
-threaded support.
-
-.[image](/uploads/227aa39e028f9dd02cc8197636b20e61/image.png)
 
 SAX (`xeno-sax` benchmarks):
 
@@ -41,6 +27,23 @@ DOM (`xeno-dom` benchmarks):
 | 4KB   | 29.46 μs     | 40.96 μs               | 9.023 μs        | 6.174 μs                 |
 | 31KB  | 29.04 μs     | 167.7 μs               | 4.020 μs        | 3.433 μs                 |
 | 211KB | 3.297 ms     | 3.147 ms               | 433.0 μs        | 280.1 μs                 |
+
+[image](/uploads/227aa39e028f9dd02cc8197636b20e61/image.png)
+
+## Note about GHC version
+
+TODO GHC 8.6.5 has problems with speed :(
+
+## Hardware & GHC
+* CPU: AMD Ryzen 9 3900X 12-Core Processor with 4200MHz
+* Memory: 32 Gb (4 banks),  2400MHz
+* Motherboard: ASRock X570 Phantom Gaming X
+* GHC: 8.6.5
+
+# Benchmark with small files
+
+In this section we present results of original `xeno` benchmarks, runned in two modes: with threaded support and without
+threaded support.
 
 ## Threaded environment
 
