@@ -24,6 +24,8 @@ TODO GHC 8.6.5 has problems with speed :(
 In this section we present results of original `xeno` benchmarks, runned in two modes: with threaded support and without
 threaded support.
 
+![image](/uploads/227aa39e028f9dd02cc8197636b20e61/image.png)
+
 ## Threaded environment
 
 Compiled with `ghc-options: -O2 -threaded -rtsopts "-with-rtsopts=-N"`.
