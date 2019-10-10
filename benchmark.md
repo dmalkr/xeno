@@ -11,32 +11,33 @@ So here are several type of benchmarks.
 
 # Summary
 
-
 SAX (`xeno-sax` benchmarks):
 
-| size  |xeno threaded | improved xeno threaded | xeno non-threaded | improved xeno non-threaded |
-| ----- | ------------ | ---------------------- | ----------------- | -------------------------- |
-| 4KB   | 24.44 μs     | 16.39 μs               | 5.638 μs          | 2.866 μs                   |
-| 31KB  | 13.01 μs     | 121.1 μs               | 2.477 μs          | 1.947 μs                   |
-| 211KB | 965.9 μs     | 760.0 μs               | 274.0 μs          | 139.3 μs                   |
-| 46MB  | na           | 14.72 ms               | na                | 14.04 ms                   |
-| 624MB | na           | 3.315 μs               | na                | 3.376 μs                   |
-| 921MB | na           | 994.8 ms               | na                | 1.023 s                    |
-| 1.6GB | na           | 293.5 ms               | na                | 299.3 ms                   |
-| 4GB   | na           | 1.090 s                | na                | 1.150 s                    |
+| size  |xeno threaded | improved xeno threaded | xeno non-threaded | improved xeno non-threaded | imp. xeno w/o copy |
+| ----- | ------------ | ---------------------- | ----------------- | -------------------------- | ------------------ |
+| 4KB   | 24.44 μs     | 16.39 μs               | 5.638 μs          | 2.866 μs                   | 2.923 μs           |
+| 31KB  | 13.01 μs     | 121.1 μs               | 2.477 μs          | 1.947 μs                   | 1.289 μs           |
+| 211KB | 965.9 μs     | 760.0 μs               | 274.0 μs          | 139.3 μs                   | 140.5 μs           |
+| 46MB  | 16.27 ms     | 14.72 ms               | 14.48 ms          | 14.04 ms                   | 9.061 ms           |
+| 624MB | 5.089 μs     | 3.315 μs               | 4.763 μs          | 3.376 μs                   | 2.912 μs           |
+| 921MB | 2.304 s      | 994.8 ms               | 2.189 s           | 1.023 s                    | 1.032 s            |
+| 1.6GB | 321.5 ms     | 293.5 ms               | 288.0 ms          | 299.3 ms                   | 191.6 ms           |
+| 4GB   | 1.471 s      | 1.090 s                | 1.308 s           | 1.150 s                    | 807.1 ms           |
 
 DOM (`xeno-dom` and `hexml-dom` benchmarks):
 
-| size  |xeno threaded | improved xeno threaded | hexml-dom threaded | xeno unthreaded | improved xeno non-threaded | hexml-dom non-threaded |
-| ----- | ------------ | ---------------------- | ------------------ | --------------- | -------------------------- | ---------------------- |
-| 4KB   | 29.46 μs     | 40.96 μs               | 10.84 μs           | 9.023 μs        | 6.174 μs                   | 3.290 μs               |
-| 31KB  | 29.04 μs     | 167.7 μs               | 82.60 μs           | 4.020 μs        | 3.433 μs                   | 2.813 μs               |
-| 211KB | 3.297 ms     | 3.147 ms               | 525.8 μs           | 433.0 μs        | 280.1 μs                   | 122.7 μs               |
-| 46MB  | na           | 20.11 ms               | 14.90 ms           |                 | 21.18 ms                   | 14.55 ms               |
-| 624MB | na           | 6.263 μs               | 2.328 μs           |                 | 5.769 μs                   | 2.228 μs               |
-| 921MB | na           | 1.692 s                | 793.8 ms           |                 | 1.732 s                    | 789.0 ms               |
-| 1.6GB | na           | 442.2 ms               | 314.7 ms           |                 | 435.2 ms                   | 353.9 ms               |
-| 4GB   | na           | 1.737 s                | na                 |                 | 2.120 s                    | n/a                    |
+| size  |xeno threaded | improved xeno threaded | hexml-dom threaded | xeno unthreaded | improved xeno non-threaded | imp. xeno w/o copy | hexml-dom non-threaded |
+| ----- | ------------ | ---------------------- | ------------------ | --------------- | -------------------------- | ------------------ | ---------------------- |
+| 4KB   | 29.46 μs     | 40.96 μs               | 10.84 μs           | 9.023 μs        | 6.174 μs                   | 6.251 μs           | 3.290 μs               |
+| 31KB  | 29.04 μs     | 167.7 μs               | 82.60 μs           | 4.020 μs        | 3.433 μs                   | 2.921 μs           | 2.813 μs               |
+| 211KB | 3.297 ms     | 3.147 ms               | 525.8 μs           | 433.0 μs        | 280.1 μs                   | 303.6 μs           | 122.7 μs               |
+| 46MB  | 28.42 ms     | 20.11 ms               | 14.90 ms           | 26.91 ms        | 21.18 ms                   | 19.04 ms           | 14.55 ms               |
+| 624MB | 8.385 μs     | 6.263 μs               | 2.328 μs           | 8.032 μs        | 5.769 μs                   | 5.270 μs           | 2.228 μs               |
+| 921MB | 3.292 s      | 1.692 s                | 793.8 ms           | 3.201 s         | 1.732 s                    | 2.188 s            | 789.0 ms               |
+| 1.6GB | 537.9 ms     | 442.2 ms               | 314.7 ms           | 490.9 ms        | 435.2 ms                   | 364.9 ms           | 353.9 ms               |
+| 4GB   | 2.492 s      | 1.737 s                | n/a                | 2.245 s         | 2.120 s                    | 1.735 s            | n/a                    |
+
+("imp. xeno w/o copy" means improved xeno without adding zero at end of bytestring)
 
 [image](/uploads/227aa39e028f9dd02cc8197636b20e61/image.png)
 
@@ -725,11 +726,14 @@ std dev              2.064 ms   (1.462 ms .. 2.875 ms)
 
 # Benchmark with big files
 
+Benchmarks ran with `--time-limit 60` to eliminate variance.
+
 ## Nonthreaded environment
 
 Compiled with `ghc-options: -O2 -rtsopts "-with-rtsopts=-H10G -AL1G -A256m -M25G"`.
 
-Benchmarks ran with `--time-limit 60` to eliminate variance.
+### Current benchmarks
+
 
 ```
 benchmarking 46MB/hexml-dom
@@ -858,11 +862,113 @@ std dev              241.4 ms   (7.854 ms .. 327.5 ms)
 variance introduced by outliers: 16% (moderately inflated)
 ```
 
+### Before speed improvements
+
+```
+benchmarking 46MB/xeno-sax
+time                 14.49 ms   (14.45 ms .. 14.52 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 14.48 ms   (14.45 ms .. 14.54 ms)
+std dev              162.5 μs   (100.4 μs .. 254.5 μs)
+
+benchmarking 46MB/xeno-dom
+time                 26.67 ms   (26.53 ms .. 26.78 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 26.91 ms   (26.80 ms .. 27.05 ms)
+std dev              481.0 μs   (407.5 μs .. 559.0 μs)
+
+benchmarking 46MB/xeno-dom-with-recovery
+time                 34.16 ms   (33.96 ms .. 34.32 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 33.75 ms   (33.66 ms .. 33.84 ms)
+std dev              322.8 μs   (277.0 μs .. 398.9 μs)
+
+benchmarking 624MB/xeno-sax
+time                 4.769 μs   (4.729 μs .. 4.812 μs)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 4.763 μs   (4.749 μs .. 4.776 μs)
+std dev              69.56 ns   (61.48 ns .. 80.52 ns)
+variance introduced by outliers: 15% (moderately inflated)
+
+benchmarking 624MB/xeno-dom
+time                 8.033 μs   (7.947 μs .. 8.106 μs)
+                     0.999 R²   (0.999 R² .. 1.000 R²)
+mean                 8.032 μs   (7.993 μs .. 8.083 μs)
+std dev              227.8 ns   (197.2 ns .. 275.6 ns)
+variance introduced by outliers: 39% (moderately inflated)
+
+benchmarking 624MB/xeno-dom-with-recovery
+time                 9.347 μs   (9.270 μs .. 9.411 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 9.519 μs   (9.458 μs .. 9.581 μs)
+std dev              305.4 ns   (268.5 ns .. 350.5 ns)
+variance introduced by outliers: 45% (moderately inflated)
+
+benchmarking 921MB/xeno-sax
+time                 2.168 s    (2.099 s .. 2.224 s)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 2.189 s    (2.171 s .. 2.213 s)
+std dev              26.88 ms   (14.05 ms .. 38.93 ms)
+variance introduced by outliers: 14% (moderately inflated)
+
+benchmarking 921MB/xeno-dom
+time                 3.220 s    (3.144 s .. 3.318 s)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 3.201 s    (3.177 s .. 3.235 s)
+std dev              33.20 ms   (27.21 ms .. 35.74 ms)
+variance introduced by outliers: 16% (moderately inflated)
+
+benchmarking 921MB/xeno-dom-with-recovery
+time                 3.611 s    (3.556 s .. 3.645 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 3.641 s    (3.624 s .. 3.652 s)
+std dev              17.77 ms   (9.617 ms .. 26.87 ms)
+variance introduced by outliers: 16% (moderately inflated)
+
+benchmarking 1.6Gb/xeno-sax
+time                 287.4 ms   (286.7 ms .. 288.3 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 288.0 ms   (287.5 ms .. 288.5 ms)
+std dev              1.005 ms   (677.9 μs .. 1.519 ms)
+
+benchmarking 1.6Gb/xeno-dom
+time                 492.5 ms   (490.7 ms .. 494.6 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 490.9 ms   (489.6 ms .. 491.9 ms)
+std dev              2.400 ms   (1.611 ms .. 3.445 ms)
+
+benchmarking 1.6Gb/xeno-dom-with-recovery
+time                 620.7 ms   (615.2 ms .. 629.3 ms)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 611.0 ms   (605.1 ms .. 616.0 ms)
+std dev              10.46 ms   (7.512 ms .. 13.16 ms)
+
+benchmarking 4Gb/xeno-sax
+time                 1.309 s    (1.306 s .. 1.312 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.308 s    (1.307 s .. 1.309 s)
+std dev              2.114 ms   (1.591 ms .. 2.696 ms)
+
+benchmarking 4Gb/xeno-dom
+time                 2.204 s    (2.082 s .. 2.300 s)
+                     0.999 R²   (0.997 R² .. 1.000 R²)
+mean                 2.245 s    (2.210 s .. 2.304 s)
+std dev              62.12 ms   (23.07 ms .. 89.62 ms)
+variance introduced by outliers: 14% (moderately inflated)
+
+benchmarking 4Gb/xeno-dom-with-recovery
+time                 2.739 s    (2.674 s .. 2.795 s)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 2.812 s    (2.769 s .. 2.864 s)
+std dev              63.86 ms   (43.18 ms .. 82.15 ms)
+variance introduced by outliers: 14% (moderately inflated)
+```
+
 ## Threaded environment
 
 Compiled with `ghc-options: -O2 -rtsopts -threaded "-with-rtsopts=-N -H10G -AL1G -A256m -M25G"`.
 
-Benchmarks ran with `--time-limit 60` to eliminate variance.
+### Current benchmarks
 
 ```
 benchmarking 46MB/hexml-dom
@@ -987,5 +1093,109 @@ time                 2.828 s    (2.703 s .. 2.975 s)
                      0.997 R²   (0.989 R² .. 1.000 R²)
 mean                 2.762 s    (2.671 s .. 2.823 s)
 std dev              100.4 ms   (53.00 ms .. 154.0 ms)
+variance introduced by outliers: 14% (moderately inflated)
+```
+
+### Before speed improvements
+
+
+```
+benchmarking 46MB/xeno-sax
+time                 16.29 ms   (16.21 ms .. 16.35 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 16.27 ms   (16.22 ms .. 16.32 ms)
+std dev              231.9 μs   (196.1 μs .. 279.4 μs)
+
+benchmarking 46MB/xeno-dom
+time                 28.33 ms   (28.22 ms .. 28.45 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 28.42 ms   (28.33 ms .. 28.55 ms)
+std dev              415.1 μs   (292.0 μs .. 549.4 μs)
+
+benchmarking 46MB/xeno-dom-with-recovery
+time                 34.52 ms   (34.22 ms .. 34.75 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 33.92 ms   (33.82 ms .. 34.03 ms)
+std dev              439.4 μs   (379.9 μs .. 523.7 μs)
+
+benchmarking 624MB/xeno-sax
+time                 5.092 μs   (5.057 μs .. 5.130 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 5.089 μs   (5.070 μs .. 5.108 μs)
+std dev              103.7 ns   (81.65 ns .. 131.2 ns)
+variance introduced by outliers: 26% (moderately inflated)
+
+benchmarking 624MB/xeno-dom
+time                 8.453 μs   (8.424 μs .. 8.492 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 8.385 μs   (8.363 μs .. 8.411 μs)
+std dev              112.0 ns   (97.12 ns .. 143.9 ns)
+variance introduced by outliers: 13% (moderately inflated)
+
+benchmarking 624MB/xeno-dom-with-recovery
+time                 9.851 μs   (9.808 μs .. 9.885 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 9.808 μs   (9.776 μs .. 9.850 μs)
+std dev              170.5 ns   (140.2 ns .. 208.5 ns)
+variance introduced by outliers: 19% (moderately inflated)
+
+benchmarking 921MB/xeno-sax
+time                 2.290 s    (2.241 s .. 2.339 s)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 2.304 s    (2.292 s .. 2.320 s)
+std dev              19.09 ms   (11.00 ms .. 26.20 ms)
+variance introduced by outliers: 14% (moderately inflated)
+
+benchmarking 921MB/xeno-dom
+time                 3.238 s    (3.180 s .. 3.286 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 3.292 s    (3.261 s .. 3.323 s)
+std dev              40.30 ms   (31.73 ms .. 47.24 ms)
+variance introduced by outliers: 16% (moderately inflated)
+
+benchmarking 921MB/xeno-dom-with-recovery
+time                 3.692 s    (3.635 s .. 3.754 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 3.682 s    (3.666 s .. 3.690 s)
+std dev              15.03 ms   (6.116 ms .. 20.90 ms)
+variance introduced by outliers: 16% (moderately inflated)
+
+benchmarking 1.6Gb/xeno-sax
+time                 317.6 ms   (313.4 ms .. 321.8 ms)
+                     0.999 R²   (0.999 R² .. 1.000 R²)
+mean                 321.5 ms   (319.6 ms .. 322.9 ms)
+std dev              3.502 ms   (2.465 ms .. 4.933 ms)
+
+benchmarking 1.6Gb/xeno-dom
+time                 537.3 ms   (533.3 ms .. 539.4 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 537.9 ms   (536.2 ms .. 540.4 ms)
+std dev              3.809 ms   (1.744 ms .. 6.103 ms)
+
+benchmarking 1.6Gb/xeno-dom-with-recovery
+time                 617.2 ms   (610.4 ms .. 625.9 ms)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 615.8 ms   (611.8 ms .. 619.9 ms)
+std dev              7.619 ms   (5.534 ms .. 12.26 ms)
+
+benchmarking 4Gb/xeno-sax
+time                 1.465 s    (1.447 s .. 1.493 s)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 1.471 s    (1.464 s .. 1.477 s)
+std dev              10.52 ms   (7.115 ms .. 14.78 ms)
+variance introduced by outliers: 11% (moderately inflated)
+
+benchmarking 4Gb/xeno-dom
+time                 2.448 s    (2.345 s .. 2.572 s)
+                     0.998 R²   (0.992 R² .. 1.000 R²)
+mean                 2.492 s    (2.448 s .. 2.547 s)
+std dev              66.66 ms   (44.21 ms .. 81.71 ms)
+variance introduced by outliers: 14% (moderately inflated)
+
+benchmarking 4Gb/xeno-dom-with-recovery
+time                 2.837 s    (2.807 s .. 2.859 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 2.840 s    (2.821 s .. 2.855 s)
+std dev              21.73 ms   (12.26 ms .. 30.64 ms)
 variance introduced by outliers: 14% (moderately inflated)
 ```
