@@ -36,6 +36,7 @@ main =
              "4KB"
              [ bench "hexml-dom" (whnf Hexml.parse input)
              , bench "xeno-sax" (whnf Xeno.SAX.validate input)
+             , bench "xeno-sax-ex" (whnf Xeno.SAX.validateEx input)
              , bench "xeno-dom" (whnf Xeno.DOM.parse input)
              , bench "xeno-dom-with-recovery" (whnf Xeno.DOM.Robust.parse input)
              , bench
@@ -61,6 +62,7 @@ main =
              "31KB"
              [ bench "hexml-dom" (whnf Hexml.parse input)
              , bench "xeno-sax" (whnf Xeno.SAX.validate input)
+             , bench "xeno-sax-ex" (whnf Xeno.SAX.validateEx input)
              , bench "xeno-dom" (whnf Xeno.DOM.parse input)
              , bench "xeno-dom-with-recovery" (whnf Xeno.DOM.Robust.parse input)
              , bench
@@ -87,6 +89,7 @@ main =
              "211KB"
              [ bench "hexml-dom" (whnf Hexml.parse input)
              , bench "xeno-sax" (whnf Xeno.SAX.validate input)
+             , bench "xeno-sax-ex" (whnf Xeno.SAX.validateEx input)
              , bench "xeno-dom" (whnf Xeno.DOM.parse input)
              , bench "xeno-dom-with-recovery" (whnf Xeno.DOM.Robust.parse input)
              , bench

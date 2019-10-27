@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE BinaryLiterals      #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE MultiWayIf          #-}
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
@@ -12,6 +13,7 @@ module Xeno.SAX
   , Process(..)
   , fold
   , validate
+  , validateEx
   , dump
   , skipDoctype
   ) where
@@ -27,6 +29,7 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Unsafe as SU
 import           Data.Char(isSpace)
 import           Data.Functor.Identity
+import           Data.STRef
 import           Data.Word
 import           Xeno.Types
 
@@ -69,6 +72,38 @@ validate s =
                s)) of
     Left (_ :: XenoException) -> False
     Right _ -> True
+
+
+-- | Parse the XML and checks tags nesting.
+--
+validateEx :: ByteString -> Bool
+validateEx s =
+  case spork
+         (runST $ do
+            tags <- newSTRef []
+            (process
+               Process {
+                 openF    = \tag   -> modifySTRef' tags (tag:)
+               , attrF    = \_ _ -> pure ()
+               , endOpenF = \_   -> pure ()
+               , textF    = \_   -> pure ()
+               , closeF   = \tag  ->
+                   modifySTRef' tags $ \case
+                      [] -> fail $ "Unexpected close tag \"" ++ show tag ++ "\""
+                      (expectedTag:tags') ->
+                          if expectedTag == tag
+                          then tags'
+                          else fail $ "Unexpected close tag. Expected \"" ++ show expectedTag ++ "\", but got \"" ++ show tag ++ "\""
+               , cdataF   = \_   -> pure ()
+               }
+               s)
+            readSTRef tags >>= \case
+                [] -> return ()
+                tags' -> fail $ "Not all tags closed: " ++ show tags'
+         ) of
+    Left (_ :: XenoException) -> False
+    Right _ -> True
+
 
 -- | Parse the XML and pretty print it to stdout.
 dump :: ByteString -> IO ()

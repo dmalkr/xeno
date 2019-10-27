@@ -45,6 +45,7 @@ main = defaultMain
 allTests :: [String]
 allTests = [ "hexml-dom"
            , "xeno-sax"
+           , "xeno-sax-ex"
            , "xeno-dom"
            , "xeno-dom-with-recovery"
            -- XXX: "hexpact", "xml-dom" library don't work with big files; require too much memory
@@ -69,6 +70,7 @@ benchMethods :: [String] -> ByteString -> [Benchmark]
 benchMethods enabledTests input =
        runBench "hexml-dom" (whnf Hexml.parse input)
     ++ runBench "xeno-sax" (whnf Xeno.SAX.validate input)
+    ++ runBench "xeno-sax-ex" (whnf Xeno.SAX.validateEx input)
     ++ runBench "xeno-dom" (whnf Xeno.DOM.parse input)
     ++ runBench "xeno-dom-with-recovery" (whnf Xeno.DOM.Robust.parse input)
     ++ runBench
