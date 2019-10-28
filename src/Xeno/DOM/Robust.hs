@@ -56,7 +56,7 @@ parse inp =
             vecRef    <- newSTRef nil
             sizeRef   <- fmap asURef $ newRef 0
             parentRef <- fmap asURef $ newRef 0
-            process Process {
+            let pr = Process {
                 openF = \(PS _ name_start name_len) -> do
                  let tag = 0x00
                      tag_end = -1
@@ -77,6 +77,7 @@ parse inp =
                     UMV.write v' (index + 2) (name_start - offset0)
                     UMV.write v' (index + 3) name_len
                     UMV.write v' (index + 4) tag_end
+                 return pr
               , attrF = \(PS _ key_start key_len) (PS _ value_start value_len) -> do
                  index <- readRef sizeRef
                  v' <-
@@ -128,6 +129,7 @@ parse inp =
                    previousParent <- UMV.read v (parent + 1)
                    writeRef parentRef previousParent
                    return correctTag -- continue closing tags, until matching one is found
+                 return pr
               , cdataF = \(PS _ cdata_start cdata_len) -> do
                  let tag = 0x03
                  index <- readRef sizeRef
@@ -143,7 +145,8 @@ parse inp =
                  do UMV.write v' index tag
                     UMV.write v' (index + 1) (cdata_start - offset0)
                     UMV.write v' (index + 2) cdata_len
-              } str
+              }
+            process pr str
             wet <- readSTRef vecRef
             arr <- UV.unsafeFreeze wet
             size <- readRef sizeRef
