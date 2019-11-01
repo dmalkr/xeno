@@ -4,6 +4,8 @@
 {-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 -- | SAX parser and API for XML.
 
@@ -29,6 +31,10 @@ import           Data.Char(isSpace)
 import           Data.Functor.Identity
 import           Data.Word
 import           Xeno.Types
+
+import qualified Language.C.Inline as C
+import           Foreign.Marshal.Utils
+
 
 data Process a =
   Process {
@@ -344,26 +350,18 @@ isNameChar1 c =
 -- | Is the character a valid tag/attribute name constituent?
 -- isNameChar1 + '-', '.', '0'-'9'
 isNameChar :: Word8 -> Bool
-isNameChar char = (lowMaskIsNameChar `testBit` char'low) || (highMaskIsNameChar `testBit` char'high)
-   -- TODO 1) change code to use W# instead of Word64
-   --      2) Document `ii - 64` -- there is underflow, but `testBit` can process this!
+isNameChar char = toBool [C.pure|
+    int { ( $(unsigned char c) >= 97 && $(unsigned char c) <= 122) ||
+          ( $(unsigned char c) >= 65 && $(unsigned char c) <= 90 ) ||
+          $(unsigned char c) == 95 ||
+          $(unsigned char c) == 58 ||
+          $(unsigned char c) == 45 ||
+          $(unsigned char c) == 46 ||
+          ( $(unsigned char c) >= 48 && $(unsigned char c) <= 57 )
+        }|]
   where
-    char'low  = fromIntegral char
-    char'high = fromIntegral (char - 64)
-    highMaskIsNameChar :: Word64
-    highMaskIsNameChar = 0b11111111111111111111111111010000111111111111111111111111110
-    --                     ------------+------------- |    ------------+-------------
-    --                                 |              |                |  bits:
-    --                                 |              |                +-- 65-90
-    --                                 |              +------------------- 95
-    --                                 +---------------------------------- 97-122
-    lowMaskIsNameChar :: Word64
-    lowMaskIsNameChar =  0b11111111111011000000000000000000000000000000000000000000000
-    --                     -----+----- ||
-    --                          |      ||  bits:
-    --                          |      |+-- 45
-    --                          |      +--- 46
-    --                          +---------- 48-58
+    c :: C.CUChar
+    c = fromIntegral char
 {-# INLINE isNameChar #-}
 
 -- | Char for '\''.

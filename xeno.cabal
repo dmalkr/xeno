@@ -4,7 +4,7 @@ synopsis: A fast event-based XML parser in pure Haskell
 description: A fast, low-memory use, event-based XML parser in pure Haskell.  
 build-type: Simple
 category: XML, Parser
-cabal-version: >=1.10
+cabal-version: >=2
 homepage: https://github.com/ocramz/xeno
 license: BSD3
 license-file: LICENSE
@@ -34,6 +34,7 @@ library
                , deepseq
                , mutable-containers
                , mtl
+               , inline-c
                -- , exceptions
                -- | DEBUG 
                -- , hspec
