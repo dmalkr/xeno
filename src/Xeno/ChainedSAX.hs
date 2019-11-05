@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns        #-}
+{-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE BinaryLiterals      #-}
 {-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE MultiWayIf          #-}
@@ -8,7 +9,7 @@
 
 -- | SAX parser and API for XML.
 
-module Xeno.SAX
+module Xeno.ChainedSAX
   ( process
   , Process(..)
   , fold
@@ -33,14 +34,14 @@ import           Data.STRef
 import           Data.Word
 import           Xeno.Types
 
-data Process a =
+data Process (m :: * -> *)  =
   Process {
-      openF    :: !(ByteString ->               a) -- ^ Open tag.
-    , attrF    :: !(ByteString -> ByteString -> a) -- ^ Tag attribute.
-    , endOpenF :: !(ByteString ->               a) -- ^ End open tag.
-    , textF    :: !(ByteString ->               a) -- ^ Text.
-    , closeF   :: !(ByteString ->               a) -- ^ Close tag.
-    , cdataF   :: !(ByteString ->               a) -- ^ CDATA.
+      openF    :: !(ByteString ->               m (Process m)) -- ^ Open tag.
+    , attrF    :: !(ByteString -> ByteString -> m ()) -- ^ Tag attribute.
+    , endOpenF :: !(ByteString ->               m ()) -- ^ End open tag.
+    , textF    :: !(ByteString ->               m ()) -- ^ Text.
+    , closeF   :: !(ByteString ->               m (Process m)) -- ^ Close tag.
+    , cdataF   :: !(ByteString ->               m ()) -- ^ CDATA.
     }
 
 --------------------------------------------------------------------------------
@@ -60,16 +61,15 @@ validate :: ByteString -> Bool
 validate s =
   case spork
          (runIdentity
-            (process
-               Process {
-                 openF    = \_   -> pure ()
+            (let pr = Process {
+                 openF    = \_   -> pure pr
                , attrF    = \_ _ -> pure ()
                , endOpenF = \_   -> pure ()
                , textF    = \_   -> pure ()
-               , closeF   = \_   -> pure ()
+               , closeF   = \_   -> pure pr
                , cdataF   = \_   -> pure ()
                }
-               s)) of
+            in process pr s)) of
     Left (_ :: XenoException) -> False
     Right _ -> True
 
@@ -81,22 +81,22 @@ validateEx s =
   case spork
          (runST $ do
             tags <- newSTRef []
-            (process
-               Process {
-                 openF    = \tag   -> modifySTRef' tags (tag:)
+            let pr = Process {
+                 openF    = \tag   -> modifySTRef' tags (tag:) >> return pr
                , attrF    = \_ _ -> pure ()
                , endOpenF = \_   -> pure ()
                , textF    = \_   -> pure ()
-               , closeF   = \tag  ->
+               , closeF   = \tag  -> do
                    modifySTRef' tags $ \case
                       [] -> fail $ "Unexpected close tag \"" ++ show tag ++ "\""
                       (expectedTag:tags') ->
                           if expectedTag == tag
                           then tags'
                           else fail $ "Unexpected close tag. Expected \"" ++ show expectedTag ++ "\", but got \"" ++ show tag ++ "\""
+                   return pr
                , cdataF   = \_   -> pure ()
                }
-               s)
+            (process pr s)
             readSTRef tags >>= \case
                 [] -> return ()
                 tags' -> fail $ "Not all tags closed: " ++ show tags'
@@ -107,13 +107,13 @@ validateEx s =
 
 -- | Parse the XML and pretty print it to stdout.
 dump :: ByteString -> IO ()
-dump str =
-  evalStateT
-    (process
-       Process {
+dump str = evalStateT (process pr str) (0 :: Int)
+  where
+      pr = Process {
          openF = \name -> do
           level <- get
           lift (S8.putStr (S8.replicate level ' ' <> "<" <> name <> ""))
+          return pr
        , attrF = \key value -> lift (S8.putStr (" " <> key <> "=\"" <> value <> "\""))
        , endOpenF = \_ -> do
           level <- get
@@ -128,12 +128,11 @@ dump str =
           let !level' = level - 2
           put level'
           lift (S8.putStrLn (S8.replicate level' ' ' <> "</" <> name <> ">"))
+          return pr
        , cdataF = \cdata -> do
           level <- get
           lift (S8.putStrLn (S8.replicate level ' ' <> "CDATA: " <> S8.pack (show cdata)))
        }
-       str)
-    (0 :: Int)
 
 -- | Fold over the XML input.
 fold
@@ -147,17 +146,15 @@ fold
   -> ByteString
   -> Either XenoException s
 fold openF attrF endOpenF textF closeF cdataF s str =
-  spork
-    (execState
-       (process Process {
-            openF    = \name -> modify (\s' -> openF s' name)
+  let pr = Process {
+            openF    = \name -> pr <$ modify (\s' -> openF s' name)
           , attrF    = \key value -> modify (\s' -> attrF s' key value)
           , endOpenF = \name -> modify (\s' -> endOpenF s' name)
           , textF    = \text -> modify (\s' -> textF s' text)
-          , closeF   = \name -> modify (\s' -> closeF s' name)
+          , closeF   = \name -> pr <$ modify (\s' -> closeF s' name)
           , cdataF   = \cdata -> modify (\s' -> cdataF s' cdata)
-        } str)
-       s)
+        }
+  in spork (execState (process pr str) s)
 
 --------------------------------------------------------------------------------
 -- Main parsing function
@@ -165,27 +162,27 @@ fold openF attrF endOpenF textF closeF cdataF s str =
 -- | Process events with callbacks in the XML input.
 process
   :: Monad m
-  => Process (m ())
+  => Process m
   -> ByteString -> m ()
-process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str' = findLT 0
+process {- !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) -} !prcs str' = findLT prcs 0
   where
     -- We add \NUL to omit length check in `s_index`
     -- Also please see https://gitlab.com/migamake/xeno/issues/1
     str = str' `S.snoc` 0
-    findLT index =
+    findLT !pr@Process{textF} index =
       case elemIndexFrom openTagChar str index of
         Nothing -> unless (S.null text) (textF text)
           where text = S.drop index str
         Just fromLt -> do
           unless (S.null text) (textF text)
-          checkOpenComment (fromLt + 1)
+          checkOpenComment pr (fromLt + 1)
           where text = substring str index fromLt
     -- Find open comment, CDATA or tag name.
-    checkOpenComment index =
+    checkOpenComment !pr@Process{} index =
       if | s_index this 0 == bangChar -- !
            && s_index this 1 == commentChar -- -
            && s_index this 2 == commentChar -> -- -
-           findCommentEnd (index + 3)
+           findCommentEnd pr (index + 3)
          | s_index this 0 == bangChar -- !
            && s_index this 1 == openAngleBracketChar -- [
            && s_index this 2 == 67 -- C
@@ -194,61 +191,62 @@ process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str' = findLT
            && s_index this 5 == 84 -- T
            && s_index this 6 == 65 -- A
            && s_index this 7 == openAngleBracketChar -> -- [
-           findCDataEnd (index + 8) (index + 8)
+           findCDataEnd pr (index + 8) (index + 8)
          | otherwise ->
-           findTagName index
+           findTagName pr index
       where
         this = S.drop index str
-    findCommentEnd index =
+    findCommentEnd !pr index =
       case elemIndexFrom commentChar str index of
         Nothing -> throw $ XenoParseError index "Couldn't find the closing comment dash."
         Just fromDash ->
           if s_index this 0 == commentChar && s_index this 1 == closeTagChar
-            then findLT (fromDash + 2)
-            else findCommentEnd (fromDash + 1)
+            then findLT pr (fromDash + 2)
+            else findCommentEnd pr (fromDash + 1)
           where this = S.drop index str
-    findCDataEnd cdata_start index =
+    findCDataEnd !pr@Process{cdataF} cdata_start index =
       case elemIndexFrom closeAngleBracketChar str index of
         Nothing -> throw $ XenoParseError index "Couldn't find closing angle bracket for CDATA."
         Just fromCloseAngleBracket ->
           if s_index str (fromCloseAngleBracket + 1) == closeAngleBracketChar
              then do
                cdataF (substring str cdata_start fromCloseAngleBracket)
-               findLT (fromCloseAngleBracket + 3) -- Start after ]]>
+               findLT pr (fromCloseAngleBracket + 3) -- Start after ]]>
              else
                -- We only found one ], that means that we need to keep searching.
-               findCDataEnd cdata_start (fromCloseAngleBracket + 1)
-    findTagName index0 =
+               findCDataEnd pr cdata_start (fromCloseAngleBracket + 1)
+    findTagName !pr@Process{openF} index0 =
       let spaceOrCloseTag = parseName str index
       in if | s_index str index0 == questionChar ->
               case elemIndexFrom closeTagChar str spaceOrCloseTag of
                 Nothing -> throw $ XenoParseError index "Couldn't find the end of the tag."
                 Just fromGt -> do
-                  findLT (fromGt + 1)
+                  findLT pr (fromGt + 1)
             | s_index str spaceOrCloseTag == closeTagChar ->
               do let tagname = substring str index spaceOrCloseTag
-                 if s_index str index0 == slashChar
-                   then closeF tagname
+                 pr' <- if s_index str index0 == slashChar
+                   then closeF pr tagname
                    else do
-                     openF tagname
+                     pr''@Process{endOpenF} <- openF tagname
                      endOpenF tagname
-                 findLT (spaceOrCloseTag + 1)
+                     return pr''
+                 findLT pr' (spaceOrCloseTag + 1)
             | otherwise ->
               do let tagname = substring str index spaceOrCloseTag
-                 openF tagname
-                 result <- findAttributes spaceOrCloseTag
+                 pr'@Process{endOpenF,closeF} <- openF tagname
+                 result <- findAttributes pr' spaceOrCloseTag
                  endOpenF tagname
                  case result of
-                   Right closingTag -> findLT (closingTag + 1)
+                   Right closingTag -> findLT pr' (closingTag + 1)
                    Left closingPair -> do
-                     closeF tagname
-                     findLT (closingPair + 2)
+                     pr'' <- closeF tagname
+                     findLT pr'' (closingPair + 2)
       where
         index =
           if s_index str index0 == slashChar
             then index0 + 1
             else index0
-    findAttributes index0 =
+    findAttributes !pr@Process{attrF} index0 =
       if s_index str index == slashChar &&
          s_index str (index + 1) == closeTagChar
         then pure (Left index)
@@ -274,20 +272,20 @@ process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str' = findLT
                                                  str
                                                  (quoteIndex + 1)
                                                  (endQuoteIndex))
-                                            findAttributes (endQuoteIndex + 1)
+                                            findAttributes pr (endQuoteIndex + 1)
                                    else throw
                                          (XenoParseError index("Expected ' or \", got: " <> S.singleton usedChar))
                          else throw (XenoParseError index ("Expected =, got: " <> S.singleton (s_index str afterAttrName) <> " at character index: " <> (S8.pack . show) afterAttrName))
       where
         index = skipSpaces str index0
 {-# INLINE process #-}
-{-# SPECIALISE process :: Process (Identity ()) -> ByteString -> Identity ()
+{-# SPECIALISE process :: Process Identity -> ByteString -> Identity ()
                #-}
-{-# SPECIALISE process :: Process (State s ()) -> ByteString -> State s ()
+{-# SPECIALISE process :: Process (State s) -> ByteString -> State s ()
                #-}
-{-# SPECIALISE process :: Process (ST s ()) -> ByteString -> ST s ()
+{-# SPECIALISE process :: Process (ST s) -> ByteString -> ST s ()
                #-}
-{-# SPECIALISE process :: Process (IO ()) -> ByteString -> IO ()
+{-# SPECIALISE process :: Process IO -> ByteString -> IO ()
                #-}
 
 --------------------------------------------------------------------------------

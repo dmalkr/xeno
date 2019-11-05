@@ -54,7 +54,7 @@ parse str =
             vecRef <- newSTRef nil
             sizeRef <- fmap asURef (newRef 0)
             parentRef <- fmap asURef (newRef 0)
-            let pr = Process {
+            process Process {
                 openF = \(PS _ name_start name_len) -> do
                      let tag = 0x00
                          tag_end = -1
@@ -75,7 +75,6 @@ parse str =
                         UMV.unsafeWrite v' (index + 2) (name_start - offset0)
                         UMV.unsafeWrite v' (index + 3) name_len
                         UMV.unsafeWrite v' (index + 4) tag_end
-                     return pr
               , attrF = \(PS _ key_start key_len) (PS _ value_start value_len) -> do
                      index <- readRef sizeRef
                      v' <-
@@ -118,7 +117,6 @@ parse str =
                      -- Pop the stack and return to the parent element.
                      previousParent <- UMV.unsafeRead v (parent + 1)
                      writeRef parentRef previousParent
-                     return pr
               , cdataF = \(PS _ cdata_start cdata_len) -> do
                      let tag = 0x03
                      index <- readRef sizeRef
@@ -134,8 +132,7 @@ parse str =
                      UMV.unsafeWrite v' index tag
                      UMV.unsafeWrite v' (index + 1) (cdata_start - offset0)
                      UMV.unsafeWrite v' (index + 2) cdata_len
-              }
-            process pr str
+              } str
             wet <- readSTRef vecRef
             arr <- UV.unsafeFreeze wet
             size <- readRef sizeRef
