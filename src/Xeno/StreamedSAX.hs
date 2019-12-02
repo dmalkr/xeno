@@ -186,11 +186,9 @@ process str' = findLT 0
             | otherwise ->
               let tagname = substring str index spaceOrCloseTag
                   (result, next) = findAttributes spaceOrCloseTag
-                  currentTagStream = (OpenElt tagname : next) ++ [EndOpenElt tagname] -- TODO change `++` with some fusion
-              in currentTagStream ++ case result of -- TODO change `++` with some fusion
-                   Right closingTag -> findLT (closingTag + 1)
-                   Left closingPair ->
-                     CloseElt tagname : findLT (closingPair + 2)
+              in OpenElt tagname : (next ++ EndOpenElt tagname : (case result of -- TODO change `++` with some fusion
+                   Right closingTag ->                    findLT (closingTag  + 1)
+                   Left closingPair -> CloseElt tagname : findLT (closingPair + 2)))
       where
         index =
           if s_index str index0 == slashChar
