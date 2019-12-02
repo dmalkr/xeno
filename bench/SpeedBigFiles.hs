@@ -24,6 +24,7 @@ import qualified Text.XML.Hexml as Hexml
 import           Text.XML.Light as XML
 import           Text.XML.Light.Input as XML
 import qualified Xeno.SAX
+import qualified Xeno.StreamedSAX
 import qualified Xeno.DOM
 import qualified Xeno.DOM.Robust
 #ifdef LIBXML2
@@ -46,6 +47,8 @@ allTests :: [String]
 allTests = [ "hexml-dom"
            , "xeno-sax"
            , "xeno-sax-ex"
+           , "xeno-sax-streamed"
+           , "xeno-sax-streamed-ex"
            , "xeno-dom"
            , "xeno-dom-with-recovery"
            -- XXX: "hexpact", "xml-dom" library don't work with big files; require too much memory
@@ -71,6 +74,8 @@ benchMethods enabledTests input =
        runBench "hexml-dom" (whnf Hexml.parse input)
     ++ runBench "xeno-sax" (whnf Xeno.SAX.validate input)
     ++ runBench "xeno-sax-ex" (whnf Xeno.SAX.validateEx input)
+    ++ runBench "xeno-sax-streamed" (whnf Xeno.StreamedSAX.validate input)
+    ++ runBench "xeno-sax-streamed-ex" (whnf Xeno.StreamedSAX.validateEx input)
     ++ runBench "xeno-dom" (whnf Xeno.DOM.parse input)
     ++ runBench "xeno-dom-with-recovery" (whnf Xeno.DOM.Robust.parse input)
     ++ runBench
