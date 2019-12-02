@@ -185,21 +185,22 @@ process str' = findLT 0
                    else (OpenElt  tagname : EndOpenElt tagname : next)
             | otherwise ->
               let tagname = substring str index spaceOrCloseTag
-                  (result, next) = findAttributes spaceOrCloseTag
-              in OpenElt tagname : (next ++ EndOpenElt tagname : (case result of -- TODO change `++` with some fusion
-                   Right closingTag ->                    findLT (closingTag  + 1)
-                   Left closingPair -> CloseElt tagname : findLT (closingPair + 2)))
+                  (result, next) = findAttributes spaceOrCloseTag nextTail
+                  nextTail = EndOpenElt tagname : (case result of
+                      Right closingTag ->                    findLT (closingTag  + 1)
+                      Left closingPair -> CloseElt tagname : findLT (closingPair + 2))
+              in  OpenElt tagname : next
       where
         index =
           if s_index str index0 == slashChar
             then index0 + 1
             else index0
-    findAttributes index0 =
+    findAttributes index0 nextTail =
       if s_index str index == slashChar &&
          s_index str (index + 1) == closeTagChar
-        then (Left index, [])
+        then (Left index, nextTail)
         else if s_index str index == closeTagChar
-               then (Right index, [])
+               then (Right index, nextTail)
                else let afterAttrName = parseName str index
                     in if s_index str afterAttrName == equalChar
                          then let quoteIndex = afterAttrName + 1
@@ -214,7 +215,7 @@ process str' = findLT 0
                                             throw
                                               (XenoParseError index "Couldn't find the matching quote character.")
                                           Just endQuoteIndex ->
-                                            let (result, next) = findAttributes (endQuoteIndex + 1)
+                                            let (result, next) = findAttributes (endQuoteIndex + 1) nextTail
                                             in  (result, AttrElt (substring str index afterAttrName)
                                                                  (substring
                                                                      str
