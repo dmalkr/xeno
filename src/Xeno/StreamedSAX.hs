@@ -68,14 +68,15 @@ validateEx str =
     Right _ -> True
   where
     checkStream :: [ByteString] -> [SAXEvent]  -> ()
-    checkStream []          [] = ()
-    checkStream tags        [] = error $ concat ["Some tags not matched: ", show tags]
-    checkStream tags        (OpenElt tag  : events) = checkStream (tag : tags) events
+    checkStream []          []                      = ()
+    checkStream tags        []                      = error $ concat ["Some tags not matched: ", show tags]
+    checkStream tags        (OpenElt  tag : events) = checkStream (tag : tags) events
     checkStream []          (CloseElt tag : _)      = error $ concat ["Unexpected close tag \"", show tag, "\""]
     checkStream (tag':tags) (CloseElt tag : events)
-      | tag == tag' = checkStream tags events
+      | tag' == tag = checkStream tags events
       | otherwise   = error $ concat ["Expected \"", show tag', "\" tag, but got \"", show tag, "\""]
     checkStream tags (_ : events) = checkStream tags events
+{-# INLINE validateEx #-}
 
 
 
@@ -120,9 +121,9 @@ validateEx str =
 process :: ByteString -> [SAXEvent]
 process str' = findLT 0
   where
-    preText text next | S.null text    =                next
-                      | text == "\NUL" =                next
-                      | otherwise      = TextElt text : next
+    preText text next | S.null text         =                next -- TODO why need `S.null text`? Why not only `s_index text 0 == 0` ?
+                      | s_index text 0 == 0 =                next
+                      | otherwise           = TextElt text : next
     -- We add \NUL to omit length check in `s_index`
     -- Also please see https://gitlab.com/migamake/xeno/issues/1
     str = str' `S.snoc` 0
