@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Simple test suite.
@@ -12,6 +13,7 @@ import qualified Data.ByteString as BS
 import           Test.Hspec
 --import qualified Test.Hspec as Hspec(it)
 import           Xeno.SAX  (validate, skipDoctype)
+import           Xeno.StreamedSAX as SSAX (SAXEvent(..), process, validate, validateEx)
 import           Xeno.DOM  (Node, Content(..), parse, name, contents, attributes, children)
 import qualified Xeno.DOM.Robust as RDOM
 import           Xeno.Types
@@ -53,9 +55,64 @@ allChildrens n = allChildrens' [n]
         in nextNodes ++ (allChildrens' nextNodes)
 
 
+onlyOpenTags :: [SAXEvent] -> [ByteString]
+onlyOpenTags = map (\(OpenElt tag) -> tag) . filter (\case { (OpenElt _) -> True ; _ -> False })
+
+
+onlyAttributes :: [SAXEvent] -> [(ByteString, ByteString)]
+onlyAttributes = map (\(AttrElt attr value) -> (attr, value)) . filter (\case { (AttrElt _ _) -> True ; _ -> False })
+
 
 spec :: SpecWith ()
 spec = do
+    describe "Xeno.StreamedSAX tests" $ do
+        it "process" $ do
+            process "<a/>"
+                `shouldBe` [OpenElt "a", EndOpenElt "a", CloseElt "a"]
+            process "<tag>text</tag>"
+                `shouldBe` [OpenElt "tag", EndOpenElt "tag", TextElt "text", CloseElt "tag"]
+            process "<tag><a>X</a><b>Y</b></tag>"
+                `shouldBe` [OpenElt "tag", EndOpenElt "tag"
+                              , OpenElt "a", EndOpenElt "a", TextElt "X", CloseElt "a"
+                              , OpenElt "b", EndOpenElt "b", TextElt "Y", CloseElt "b"
+                           , CloseElt "tag"]
+            process "<a a1=\"b1\"/>"
+                `shouldBe` [OpenElt "a", AttrElt "a1" "b1", EndOpenElt "a", CloseElt "a"]
+            process "<tag a=\"bc\" d=\"ef\">text</tag>"
+                `shouldBe` [OpenElt "tag", AttrElt "a" "bc",AttrElt "d" "ef", EndOpenElt "tag", TextElt "text", CloseElt "tag"]
+            process "<tag><a x=\"y y1 <\">X</a><b cde=\">>><<<\">Y</b></tag>"
+                `shouldBe` [OpenElt "tag", EndOpenElt "tag"
+                              , OpenElt "a", AttrElt "x" "y y1 <",   EndOpenElt "a", TextElt "X", CloseElt "a"
+                              , OpenElt "b", AttrElt "cde" ">>><<<", EndOpenElt "b", TextElt "Y", CloseElt "b"
+                           , CloseElt "tag"]
+        it "process ex" $ do
+            xml1 <- BS.readFile "data/books-4kb.xml"
+            onlyOpenTags (process xml1)
+                `shouldBe` ["catalog","book","author","title","genre","price","publish_date","description"
+                           ,"book","author","title","genre","price","publish_date","description","book"
+                           ,"author","title","genre","price","publish_date","description","book","author"
+                           ,"title","genre","price","publish_date","description","book","author","title"
+                           ,"genre","price","publish_date","description","book","author","title","genre"
+                           ,"price","publish_date","description","book","author","title","genre","price"
+                           ,"publish_date","description","book","author","title","genre","price","publish_date"
+                           ,"description","book","author","title","genre","price","publish_date","description"
+                           ,"book","author","title","genre","price","publish_date","description","book"
+                           ,"author","title","genre","price","publish_date","description","book","author"
+                           ,"title","genre","price","publish_date","description"]
+            onlyAttributes (process xml1)
+                `shouldBe` [("id","bk101"),("id","bk102"),("id","bk103"),("id","bk104")
+                           ,("id","bk105"),("id","bk106"),("id","bk107"),("id","bk108")
+                           ,("id","bk109"),("id","bk110"),("id","bk111"),("id","bk112")]
+        it "validate" $ do
+            xml1 <- BS.readFile "data/books-4kb.xml"
+            SSAX.validate xml1 `shouldBe` True
+            xml2 <- BS.readFile "data/fabricated-211kb.xml"
+            SSAX.validate xml2 `shouldBe` True
+        it "validateEx" $ do
+            xml1 <- BS.readFile "data/books-4kb.xml"
+            SSAX.validateEx xml1 `shouldBe` True
+            xml2 <- BS.readFile "data/fabricated-211kb.xml"
+            SSAX.validateEx xml2 `shouldBe` True
     describe "Xeno.DOM tests" $ do
         it "test 1" $ do
             xml <- BS.readFile "data/books-4kb.xml"
