@@ -30,8 +30,7 @@ import qualified Text.XML.LibXML.Parser as Libxml2
 readFileZ :: FilePath -> IO (ByteString, Xeno.Types.ByteStringZeroTerminated)
 readFileZ fn = do
     !s <- S.readFile fn
-    let !sz = Xeno.Types.BSZT (s `S.snoc` 0)
-    return (s,  sz)
+    return (s, Xeno.Types.fromBS s)
 
 
 main :: IO ()
