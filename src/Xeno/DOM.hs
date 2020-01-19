@@ -1,8 +1,4 @@
-{-# LANGUAGE BangPatterns               #-}
-{-# LANGUAGE DeriveAnyClass             #-}
-{-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE BangPatterns #-}
 -- | DOM parser and API for XML.
 
 module Xeno.DOM
@@ -17,16 +13,16 @@ module Xeno.DOM
 
 import           Control.Monad.ST
 import           Control.Spork
-import           Data.ByteString          (ByteString)
-import           Data.ByteString.Internal (ByteString(PS))
-import qualified Data.ByteString as S
+import           Data.ByteString             (ByteString)
+import qualified Data.ByteString             as S
+import           Data.ByteString.Internal    (ByteString (PS))
 import           Data.Mutable
 import           Data.STRef
-import qualified Data.Vector.Unboxed as UV
+import qualified Data.Vector.Unboxed         as UV
 import qualified Data.Vector.Unboxed.Mutable as UMV
+import           Xeno.DOM.Internal
 import           Xeno.SAX
 import           Xeno.Types
-import           Xeno.DOM.Internal
 
 -- | Parse a complete Nodes document.
 parse :: ByteString -> Either XenoException Node
@@ -82,7 +78,7 @@ parse str =
                               return v'
                      let tag = 0x02
                      do writeRef sizeRef (index + 5)
-                     do UMV.unsafeWrite v' index tag
+                        UMV.unsafeWrite v' index tag
                         UMV.unsafeWrite v' (index + 1) (key_start - offset0)
                         UMV.unsafeWrite v' (index + 2) key_len
                         UMV.unsafeWrite v' (index + 3) (value_start - offset0)
@@ -100,7 +96,7 @@ parse str =
                               writeSTRef vecRef v'
                               return v'
                      do writeRef sizeRef (index + 3)
-                     do UMV.unsafeWrite v' index tag
+                        UMV.unsafeWrite v' index tag
                         UMV.unsafeWrite v' (index + 1) (text_start - offset0)
                         UMV.unsafeWrite v' (index + 2) text_len
               , closeF = \_ -> do

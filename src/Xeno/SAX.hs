@@ -11,7 +11,7 @@
 module Xeno.SAX
   ( process
   , Process(..)
-  , StringLike(..)
+  , VectorizedString(..)
   , fold
   , validate
   , validateEx
@@ -27,55 +27,11 @@ import           Data.Bits
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
-import qualified Data.ByteString.Unsafe as SU
-import           Data.Char(isSpace)
 import           Data.Functor.Identity
-import           Data.Semigroup
 import           Data.STRef
 import           Data.Word
 import           Xeno.Types
-
-
-class StringLike str where
-    s_index'       :: str -> Int -> Word8
-    elemIndexFrom' :: Word8 -> str -> Int -> Maybe Int
-    drop'          :: Int -> str -> str
-    substring'     :: str -> Int -> Int -> ByteString
-    toBS           :: str -> ByteString
-
-instance StringLike ByteString where
-    s_index'       = s_index
-    {-# INLINE s_index' #-}
-    elemIndexFrom' = elemIndexFrom
-    {-# INLINE elemIndexFrom' #-}
-    drop'          = S.drop
-    {-# INLINE drop' #-}
-    substring'     = substring
-    {-# INLINE substring' #-}
-    toBS           = id
-    {-# INLINE toBS #-}
-
-instance StringLike ByteStringZeroTerminated where
-    s_index' (BSZT ps) n = ps `SU.unsafeIndex` n
-    {-# INLINE s_index' #-}
-    elemIndexFrom' w (BSZT bs) i = elemIndexFrom w bs i
-    {-# INLINE elemIndexFrom' #-}
-    drop' i (BSZT bs) = BSZT $ S.drop i bs
-    {-# INLINE drop' #-}
-    substring' (BSZT bs) s t = substring bs s t
-    {-# INLINE substring' #-}
-    toBS (BSZT bs) = bs
-    {-# INLINE toBS #-}
-
-data Process a =
-  Process {
-      openF    :: !(ByteString ->               a) -- ^ Open tag.
-    , attrF    :: !(ByteString -> ByteString -> a) -- ^ Tag attribute.
-    , endOpenF :: !(ByteString ->               a) -- ^ End open tag.
-    , textF    :: !(ByteString ->               a) -- ^ Text.
-    , closeF   :: !(ByteString ->               a) -- ^ Close tag.
-    , cdataF   :: !(ByteString ->               a) -- ^ CDATA.
-    }
+import           Data.Char(isSpace)
 
 --------------------------------------------------------------------------------
 -- Helpful interfaces to the parser
@@ -90,7 +46,7 @@ data Process a =
 --
 -- > > validate "<b"
 -- > False
-validate :: (StringLike str) => str -> Bool
+validate :: (VectorizedString str) => str -> Bool
 validate s =
   case spork
          (runIdentity
@@ -114,7 +70,7 @@ validate s =
 
 -- | Parse the XML and checks tags nesting.
 --
-validateEx :: (StringLike str) => str -> Bool
+validateEx :: (VectorizedString str) => str -> Bool
 validateEx s =
   case spork
          (runST $ do
@@ -205,18 +161,18 @@ fold openF attrF endOpenF textF closeF cdataF s str =
 
 -- | Process events with callbacks in the XML input.
 process
-  :: (Monad m, StringLike str)
-  => Process (m ())
+  :: (Monad m, VectorizedString str)
+  => Process str (m ())
   -> str
   -> m ()
 process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str = findLT 0
   where
     findLT index =
       case elemIndexFrom' openTagChar str index of
-        Nothing -> unless (S.null text) (textF text)
-          where text = toBS $ drop' index str
+        Nothing -> unless (s_null text) (textF text)
+          where text = drop' index str
         Just fromLt -> do
-          unless (S.null text) (textF text)
+          unless (s_null text) (textF text)
           checkOpenComment (fromLt + 1)
           where text = substring' str index fromLt
     -- Find open comment, CDATA or tag name.
@@ -320,49 +276,36 @@ process !(Process {openF, attrF, endOpenF, textF, closeF, cdataF}) str = findLT 
       where
         index = skipSpaces str index0
 {-# INLINE process #-}
-{-# SPECIALISE process :: Process (Identity ()) -> ByteString -> Identity ()
+{-# SPECIALISE process :: Process ByteString (Identity ()) -> ByteString -> Identity ()
                #-}
-{-# SPECIALISE process :: Process (State s ()) -> ByteString -> State s ()
+{-# SPECIALISE process :: Process ByteString (State s  ()) -> ByteString -> State s  ()
                #-}
-{-# SPECIALISE process :: Process (ST s ()) -> ByteString -> ST s ()
+{-# SPECIALISE process :: Process ByteString (ST    s  ()) -> ByteString -> ST    s  ()
                #-}
-{-# SPECIALISE process :: Process (IO ()) -> ByteString -> IO ()
+{-# SPECIALISE process :: Process ByteString (IO       ()) -> ByteString -> IO       ()
                #-}
-{-# SPECIALISE process :: Process (Identity ()) -> ByteStringZeroTerminated -> Identity ()
+{-# SPECIALISE process :: Process ByteStringZeroTerminated (Identity ()) -> ByteStringZeroTerminated -> Identity ()
                #-}
-{-# SPECIALISE process :: Process (State s ()) -> ByteStringZeroTerminated -> State s ()
+{-# SPECIALISE process :: Process ByteStringZeroTerminated (State  s ()) -> ByteStringZeroTerminated -> State s ()
                #-}
-{-# SPECIALISE process :: Process (ST s ()) -> ByteStringZeroTerminated -> ST s ()
+{-# SPECIALISE process :: Process ByteStringZeroTerminated (ST     s ()) -> ByteStringZeroTerminated -> ST    s ()
                #-}
-{-# SPECIALISE process :: Process (IO ()) -> ByteStringZeroTerminated -> IO ()
+{-# SPECIALISE process :: Process ByteStringZeroTerminated (IO       ()) -> ByteStringZeroTerminated -> IO      ()
                #-}
 
 --------------------------------------------------------------------------------
 -- ByteString utilities
 
--- | /O(1)/ 'ByteString' index (subscript) operator, starting from 0.
-s_index :: ByteString -> Int -> Word8
-s_index ps n
-    | n < 0            = throw (XenoStringIndexProblem n ps)
-    | n >= S.length ps = throw (XenoStringIndexProblem n ps)
-    | otherwise        = ps `SU.unsafeIndex` n
-{-# INLINE s_index #-}
-
 -- | A fast space skipping function.
-skipSpaces :: (StringLike str) => str -> Int -> Int
+skipSpaces :: (VectorizedString str) => str -> Int -> Int
 skipSpaces str i =
   if isSpaceChar (s_index' str i)
     then skipSpaces str (i + 1)
     else i
 {-# INLINE skipSpaces #-}
 
--- | Get a substring of a string.
-substring :: ByteString -> Int -> Int -> ByteString
-substring s start end = S.take (end - start) (S.drop start s)
-{-# INLINE substring #-}
-
 -- | Basically @findIndex (not . isNameChar)@, but doesn't allocate.
-parseName :: (StringLike str) => str -> Int -> Int
+parseName :: (VectorizedString str) => str -> Int -> Int
 parseName str index =
   if not (isNameChar1 (s_index' str index))
      then index
@@ -370,20 +313,12 @@ parseName str index =
 {-# INLINE parseName #-}
 
 -- | Basically @findIndex (not . isNameChar)@, but doesn't allocate.
-parseName' :: (StringLike str) => str -> Int -> Int
+parseName' :: (VectorizedString str) => str -> Int -> Int
 parseName' str index =
   if not (isNameChar (s_index' str index))
      then index
      else parseName' str (index + 1)
 {-# INLINE parseName' #-}
-
--- | Get index of an element starting from offset.
-elemIndexFrom :: Word8 -> ByteString -> Int -> Maybe Int
-elemIndexFrom c str offset = fmap (+ offset) (S.elemIndex c (S.drop offset str))
--- Without the INLINE below, the whole function is twice as slow and
--- has linear allocation. See git commit with this comment for
--- results.
-{-# INLINE elemIndexFrom #-}
 
 --------------------------------------------------------------------------------
 -- Character types
@@ -403,21 +338,6 @@ isNameChar1 :: Word8 -> Bool
 isNameChar1 c =
   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58
 {-# INLINE isNameChar1 #-}
-
--- isNameCharOriginal :: Word8 -> Bool
--- isNameCharOriginal c =
---   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58 ||
---   c == 45 || c == 46 || (c >= 48 && c <= 57)
--- {-# INLINE isNameCharOriginal #-}
---
--- TODO Strange, but highMaskIsNameChar, lowMaskIsNameChar don't calculate fast... FIX IT
--- highMaskIsNameChar, lowMaskIsNameChar :: Word64
--- (highMaskIsNameChar, lowMaskIsNameChar) =
---     foldl (\(hi,low) char -> (hi `setBit` (char - 64), low `setBit` char)) -- NB: `setBit` can process overflowed values (where char < 64; -- TODO fix it
---           (0::Word64, 0::Word64)
---           (map fromIntegral (filter isNameCharOriginal [0..128]))
--- {-# INLINE highMaskIsNameChar #-}
--- {-# INLINE lowMaskIsNameChar #-}
 
 -- | Is the character a valid tag/attribute name constituent?
 -- isNameChar1 + '-', '.', '0'-'9'

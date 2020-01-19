@@ -1,11 +1,13 @@
 # Introduction
 
-There are two issues with old `xeno` benchmarks:
+There are three issues with old `xeno` benchmarks:
 
 * They run on threaded Haskell RTS (compiled with `-threaded`). Threading lead to very big variance in benchmarks
   (sometimes R² is less then 0.8). Therefore threaded benchmarking is not accurate.
 * They run on relatively small files. Some speed improvements become apparent only on big files (more then 100 Mb) and
   benchmarking with small files does not detect an effect of all improvements.
+* Putting `VectorizedString` class into `Xeno.Types` module slows down in 8.6.4, but  not in 8.4.4
+  Benchmarks in 8.6.4 seem also prone to arbitrary changes when the code is reordered.
 
 So here are several type of benchmarks.
 
@@ -13,7 +15,7 @@ So here are several type of benchmarks.
 
 SAX (`xeno-sax` benchmarks):
 
-| size  |xeno threaded | improved xeno threaded | xeno non-threaded | improved xeno non-threaded | imp. xeno w/o copy |
+| size  |xeno 0.3.5.2 threaded | xeno 1.0.0.0 threaded | xeno 0.3.5.2 non-threaded | xeno 1.0.0.0 non-threaded | xeno 1.0.0.0 w/o copy |
 | ----- | ------------ | ---------------------- | ----------------- | -------------------------- | ------------------ |
 | 4KB   | 24.44 μs     | 16.39 μs               | 5.638 μs          | 2.866 μs                   | 2.923 μs           |
 | 31KB  | 13.01 μs     | 121.1 μs               | 2.477 μs          | 1.947 μs                   | 1.289 μs           |
@@ -26,7 +28,7 @@ SAX (`xeno-sax` benchmarks):
 
 DOM (`xeno-dom` and `hexml-dom` benchmarks):
 
-| size  |xeno threaded | improved xeno threaded | hexml-dom threaded | xeno unthreaded | improved xeno non-threaded | imp. xeno w/o copy | hexml-dom non-threaded |
+| size  |xeno 0.3.5.2 threaded | xeno 1.0.0.0 threaded | hexml-dom threaded xeno 0.3.5.2 unthreaded | xeno 1.0.0.0 unthreaded | xeno 1.0.0.0 w/o copy | hexml-dom non-threaded |
 | ----- | ------------ | ---------------------- | ------------------ | --------------- | -------------------------- | ------------------ | ---------------------- |
 | 4KB   | 29.46 μs     | 40.96 μs               | 10.84 μs           | 9.023 μs        | 6.174 μs                   | 6.251 μs           | 3.290 μs               |
 | 31KB  | 29.04 μs     | 167.7 μs               | 82.60 μs           | 4.020 μs        | 3.433 μs                   | 2.921 μs           | 2.813 μs               |
@@ -66,21 +68,20 @@ Please note **huge** variance introduced by outliers and low R².
 
 Memory:
 
-```
-Case                          Allocated  GCs
-4kb_hexml_dom                     3,808    0
-4kb_xeno_sax                      3,856    0
-4kb_xeno_dom                     12,416    0
-4kb_xeno_dom-with-recovery       18,360    0
-31kb_hexml_dom                   30,608    0
-31kb_xeno_sax                    30,440    0
-31kb_xeno_dom                    62,320    0
-31kb_xeno_dom-with-recovery      41,488    0
-211kb_hexml_dom                 211,752    0
-211kb_xeno_sax                  247,640    0
-211kb_xeno_dom                  930,160    0
-211kb_xeno_dom-with-recovery  1,549,408    0
-```
+Case                         | Allocated | GCs
+---------------------------- | --------- | ---
+4kb_hexml_dom                |     3,808 |  0
+4kb_xeno_sax                 |     3,856 |  0
+4kb_xeno_dom                 |    12,416 |  0
+4kb_xeno_dom-with-recovery   |    18,360 |  0
+31kb_hexml_dom               |    30,608 |  0
+31kb_xeno_sax                |    30,440 |  0
+31kb_xeno_dom                |    62,320 |  0
+31kb_xeno_dom-with-recovery  |    41,488 |  0
+211kb_hexml_dom              |   211,752 |  0
+211kb_xeno_sax               |   247,640 |  0
+211kb_xeno_dom               |   930,160 |  0
+211kb_xeno_dom-with-recovery | 1,549,408 |  0
 
 Speed:
 
@@ -232,7 +233,7 @@ std dev              16.85 ms   (6.239 ms .. 21.98 ms)
 variance introduced by outliers: 19% (moderately inflated)
 ```
 
-### Before speed improvements
+### Before speed improvements (v0.3.5.2)
 
 Memory:
 
@@ -408,7 +409,7 @@ Compiled with `ghc-options: -O2 -rtsopts`.
 
 Please note almost lack of variance introduced by outliers and high R².
 
-### Current benchmarks
+### Current benchmarks (v1.0.0.0)
 
 Memory:
 
@@ -567,7 +568,7 @@ variance introduced by outliers: 16% (moderately inflated)
 Benchmark xeno-speed-bench: FINISH
 ```
 
-### Before speed improvements
+### Before speed improvements (v0.3.5.2)
 
 Memory:
 
@@ -732,7 +733,7 @@ Benchmarks ran with `--time-limit 60` to eliminate variance.
 
 Compiled with `ghc-options: -O2 -rtsopts "-with-rtsopts=-H10G -AL1G -A256m -M25G"`.
 
-### Current benchmarks
+### Current benchmarks (v1.0.0.0)
 
 
 ```
@@ -862,7 +863,7 @@ std dev              241.4 ms   (7.854 ms .. 327.5 ms)
 variance introduced by outliers: 16% (moderately inflated)
 ```
 
-### Before speed improvements
+### Before speed improvements (v0.3.5.2)
 
 ```
 benchmarking 46MB/xeno-sax
@@ -1096,7 +1097,7 @@ std dev              100.4 ms   (53.00 ms .. 154.0 ms)
 variance introduced by outliers: 14% (moderately inflated)
 ```
 
-### Before speed improvements
+### Before speed improvements (v0.3.5.2)
 
 
 ```

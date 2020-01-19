@@ -1,7 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict            #-}
-{-# LANGUAGE ViewPatterns      #-}
-{-# LANGUAGE CPP               #-}
 -- | Simplifies raising and presenting localized exceptions to the user.
 module Xeno.Errors(printExceptions
                   ,displayException
@@ -9,10 +7,10 @@ module Xeno.Errors(printExceptions
                   ,failHere
                   ) where
 
-import           Data.Semigroup((<>))
-import qualified Data.ByteString.Char8 as BS hiding (elem)
-import           Data.ByteString.Internal(ByteString(..))
-import           System.IO(stderr)
+import qualified Data.ByteString.Char8    as BS hiding (elem)
+import           Data.ByteString.Internal (ByteString (..))
+import           Data.Semigroup           ((<>))
+import           System.IO                (stderr)
 
 import           Xeno.Types
 
@@ -58,4 +56,3 @@ revTake i (PS ptr from to) = PS ptr (end-len) len
   where
     end = from + to
     len = min to i
-

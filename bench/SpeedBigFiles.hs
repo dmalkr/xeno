@@ -104,8 +104,7 @@ readBZip2File :: FilePath -> IO (ByteString, Xeno.Types.ByteStringZeroTerminated
 readBZip2File fn = do
     file <- L.readFile ("data" </> "ex" </> fn)
     let !bs  = L.toStrict $ decompress file
-        !bsz = Xeno.Types.BSZT $ bs `S.snoc` 0
-    return (bs, bsz)
+    return (bs, Xeno.Types.fromBS bs)
 
 
 deriving instance Generic Content
