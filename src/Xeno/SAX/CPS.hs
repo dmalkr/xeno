@@ -1,10 +1,7 @@
+{-# LANGUAGE GADTs               #-}
 {-# LANGUAGE MultiWayIf          #-}
-{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE BangPatterns        #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 -- | SAX parser and API for XML.
 
@@ -13,14 +10,14 @@ module Xeno.SAX.CPS
   ) where
 
 import           Control.Exception
-import           Control.Monad.State.Strict
 import           Control.Monad.ST.Strict
+import           Control.Monad.State.Strict
 import           Control.Spork
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as S
-import qualified Data.ByteString.Char8 as S8
-import qualified Data.ByteString.Unsafe as SU
-import           Data.Char(isSpace)
+import           Data.ByteString             (ByteString)
+import qualified Data.ByteString             as S
+import qualified Data.ByteString.Char8       as S8
+import qualified Data.ByteString.Unsafe      as SU
+import           Data.Char                   (isSpace)
 import           Data.Functor.Identity
 import           Data.Monoid
 import           Data.Word
@@ -31,7 +28,7 @@ import           Data.STRef
 import qualified Data.Vector.Unboxed as UV -}
 import qualified Data.Vector.Unboxed.Mutable as UMV
 
-import Xeno.SAX
+import           Xeno.SAX
 
 cps ::       Process (ST s b)            -- initial processor
     -> ST s (Process (ST s b),           -- mutable processor
@@ -64,6 +61,6 @@ pushdown p = do
   (proc, next) <- cps p
   stackSize  <- newSTRef 0
   stackAlloc <- newSTRef 16
-  stack      <- 
+  stack      <-
   let call aProc = do
 -}

@@ -1,8 +1,3 @@
-{-# LANGUAGE BangPatterns               #-}
-{-# LANGUAGE DeriveAnyClass             #-}
-{-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | DOM parser and API for XML.
 --   Slightly slower DOM parsing,
 --   but add missing close tags.
@@ -18,14 +13,16 @@ module Xeno.DOM.Robust
 
 import           Control.Monad.ST
 import           Control.Spork
-import           Data.ByteString.Internal(ByteString(..))
+import           Data.ByteString.Internal    (ByteString (..))
+import           Data.Mutable                (asURef, newRef, readRef, writeRef)
 import           Data.STRef
 import qualified Data.Vector.Unboxed         as UV
 import qualified Data.Vector.Unboxed.Mutable as UMV
-import           Data.Mutable(asURef, newRef, readRef, writeRef)
+import           Xeno.DOM.Internal           (Content (..), Node (..),
+                                              attributes, children, contents,
+                                              name)
 import           Xeno.SAX
 import           Xeno.Types
-import           Xeno.DOM.Internal(Node(..), Content(..), name, attributes, contents, children)
 
 -- | Parse a complete Nodes document.
 parse :: ByteString -> Either XenoException Node
@@ -34,7 +31,7 @@ parse inp =
     Left e -> Left e
     Right r ->
       case findRootNode r of
-        Just n -> Right n
+        Just n  -> Right n
         Nothing -> Left XenoExpectRootNode
   where
     findRootNode r = go 0
@@ -44,15 +41,15 @@ parse inp =
           -- skipping text assuming that it contains only white space
           -- characters
           Just 0x1 -> go (n+3)
-          _ -> Nothing
+          _        -> Nothing
     PS _ offset0 _ = str
     str = skipDoctype inp
     node =
       runST
         (do nil <- UMV.new 1000
             vecRef    <- newSTRef nil
-            sizeRef   <- fmap asURef $ newRef 0
-            parentRef <- fmap asURef $ newRef 0
+            sizeRef   <- asURef <$> newRef 0
+            parentRef <- asURef <$> newRef 0
             process Process {
                 openF = \(PS _ name_start name_len) -> do
                  let tag = 0x00
@@ -86,7 +83,7 @@ parse inp =
                           return v'
                  let tag = 0x02
                  do writeRef sizeRef (index + 5)
-                 do UMV.write v' index tag
+                    UMV.write v' index tag
                     UMV.write v' (index + 1) (key_start - offset0)
                     UMV.write v' (index + 2) key_len
                     UMV.write v' (index + 3) (value_start - offset0)
@@ -104,7 +101,7 @@ parse inp =
                           writeSTRef vecRef v'
                           return v'
                  do writeRef sizeRef (index + 3)
-                 do UMV.write v' index tag
+                    UMV.write v' index tag
                     UMV.write v' (index + 1) (text_start - offset0)
                     UMV.write v' (index + 2) text_len
               , closeF = \closeTag@(PS s _ _) -> do
@@ -137,7 +134,7 @@ parse inp =
                           writeSTRef vecRef v'
                           return v'
                  do writeRef sizeRef (index + 3)
-                 do UMV.write v' index tag
+                    UMV.write v' index tag
                     UMV.write v' (index + 1) (cdata_start - offset0)
                     UMV.write v' (index + 2) cdata_len
               } str
@@ -152,4 +149,3 @@ untilM loop = do
   case cond of
     True  -> return ()
     False -> untilM loop
-

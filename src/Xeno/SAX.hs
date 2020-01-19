@@ -339,21 +339,6 @@ isNameChar1 c =
   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58
 {-# INLINE isNameChar1 #-}
 
--- isNameCharOriginal :: Word8 -> Bool
--- isNameCharOriginal c =
---   (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c == 95 || c == 58 ||
---   c == 45 || c == 46 || (c >= 48 && c <= 57)
--- {-# INLINE isNameCharOriginal #-}
---
--- TODO Strange, but highMaskIsNameChar, lowMaskIsNameChar don't calculate fast... FIX IT
--- highMaskIsNameChar, lowMaskIsNameChar :: Word64
--- (highMaskIsNameChar, lowMaskIsNameChar) =
---     foldl (\(hi,low) char -> (hi `setBit` (char - 64), low `setBit` char)) -- NB: `setBit` can process overflowed values (where char < 64; -- TODO fix it
---           (0::Word64, 0::Word64)
---           (map fromIntegral (filter isNameCharOriginal [0..128]))
--- {-# INLINE highMaskIsNameChar #-}
--- {-# INLINE lowMaskIsNameChar #-}
-
 -- | Is the character a valid tag/attribute name constituent?
 -- isNameChar1 + '-', '.', '0'-'9'
 isNameChar :: Word8 -> Bool
